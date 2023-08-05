@@ -1,67 +1,62 @@
-mod string_utils;
-
-use std::io::{stdin, stdout, Write};
-
-use string_utils::OobeString;
+use egui_extras::RetainedImage;
 
 fn main() {
-    loop {
-        let mail_response = prompt("Do you use Gmail or Hotmail?");
-        match mail_response.to_lowercase().as_str() {
-            "gmail" | "g" => {
-                println!("Setting up Gmail...");
-                break;
-            }
-            "hotmail" | "h" => {
-                println!("Setting up Hotmail...");
-                break;
-            }
-            _ => {}
-        }
-    }
+    let firefox_icon = RetainedImage::from_image_bytes(
+        "firefox_icon",
+        include_bytes!("../assets/firefox_icon.png"),
+    )
+    .unwrap();
 
-    let office_response = prompt("Do you need an office suite?");
-    if office_response.is_yes() {
-        let documents = prompt("Documents?");
-        let slideshows = prompt("Slideshows?");
-        let spreadsheets = prompt("Spreadsheets?");
+    let gmail_icon =
+        RetainedImage::from_image_bytes("gmail_icon", include_bytes!("../assets/gmail_icon.png"))
+            .unwrap();
 
-        if documents.is_yes() {
-            println!("Setting up Libre Office Writer...")
-        }
+    let libre_office_icon = RetainedImage::from_image_bytes(
+        "libre_office_icon",
+        include_bytes!("../assets/libre_office_icon.png"),
+    )
+    .unwrap();
 
-        if slideshows.is_yes() {
-            println!("Setting up Libre Office Impress...");
-        }
+    let icons = vec![firefox_icon, gmail_icon, libre_office_icon];
 
-        if spreadsheets.is_yes() {
-            println!("Setting up Libre Office Calc...");
-        }
-    }
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "OOBE",
+        native_options,
+        Box::new(|_| Box::new(OobeApp::new(icons))),
+    )
+    .unwrap();
+}
 
-    let zoom_response = prompt("Are you going to be making video calls?");
-    if zoom_response.is_yes() {
-        println!("Setting up Zoom...");
+#[derive(Default)]
+struct OobeApp {
+    icons: Vec<RetainedImage>,
+}
+
+impl OobeApp {
+    /// Called once before the first frame.
+    pub fn new(icons: Vec<RetainedImage>) -> Self {
+        // This is also where you can customize the look and feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        Self { icons }
     }
 }
 
-// Prompts the user for input and returns their response
-fn prompt(message: &str) -> String {
-    print!("{} ", message);
-    flush();
+impl eframe::App for OobeApp {
+    /// Called each time the UI needs repainting, which may be many times per second.
+    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let Self { icons } = self;
 
-    read_line()
-}
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("OOBE");
 
-// Reads a line of input from the user (just a more ergonomic usage of `Stdin::read_line()`)
-fn read_line() -> String {
-    let mut input = String::new();
-    stdin().read_line(&mut input).unwrap();
-
-    input.trim().to_owned()
-}
-
-// Flushes stdout, printing all text in the buffer
-fn flush() {
-    stdout().flush().unwrap();
+            ui.horizontal(|ui| {
+                icons[0].show_scaled(ui, 0.3);
+                icons[1].show_scaled(ui, 0.06);
+                icons[2].show_scaled(ui, 0.3);
+            })
+        });
+    }
 }
