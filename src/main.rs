@@ -166,11 +166,16 @@ impl eframe::App for OobeApp {
                     ui.vertical_centered(|ui| {
                         ui.heading(heading("You can use Firefox to browse the web.", 100.0));
 
+                        ui.add_space(18.0);
+
                         ui.horizontal(|ui| {
-                            ui.add_space(90.0);
+                            ui.add_space(106.0);
                             self.icons[0].show_size(ui, Vec2::new(330.0, 330.0));
+                            ui.add_space(20.0);
                             self.icons[1].show_size(ui, Vec2::new(204.0, 136.0));
+                            ui.add_space(20.0);
                             self.icons[2].show_size(ui, Vec2::new(325.0, 324.0));
+                            ui.add_space(106.0);
                         });
 
                         ui.with_layout(bottom_alignment, |ui| {
