@@ -1,6 +1,6 @@
 use egui::{
     hex_color, Align, Button, CentralPanel, Color32, FontData, FontDefinitions, FontFamily, FontId,
-    Layout, Margin, RichText, Rounding, Vec2,
+    Frame, Layout, Margin, RichText, Rounding, Vec2,
 };
 use egui_extras::RetainedImage;
 
@@ -107,19 +107,27 @@ impl OobeApp {
 
 impl eframe::App for OobeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let margin = Margin {
-            left: 200.0,
-            right: 200.0,
-            ..Default::default()
+        let panel = CentralPanel::default();
+        let frame = |top_margin: f32, side_margin: f32| -> Frame {
+            let margin = Margin {
+                top: top_margin,
+                left: side_margin,
+                right: side_margin,
+                ..Default::default()
+            };
+
+            Frame {
+                fill: hex_color!("#DBFFF6"),
+                inner_margin: margin,
+                ..Default::default()
+            }
         };
 
-        let frame = egui::Frame {
-            fill: hex_color!("#DBFFF6"),
-            inner_margin: margin,
-            ..Default::default()
+        let heading = |text: &str, size: f32| -> RichText {
+            RichText::new(text)
+                .font(FontId::proportional(size))
+                .color(Color32::BLACK)
         };
-
-        let top_margin = 104f32;
 
         let next_button_text = RichText::new("Next")
             .font(FontId::proportional(38.0))
@@ -131,17 +139,11 @@ impl eframe::App for OobeApp {
 
         let bottom_alignment = Layout::bottom_up(Align::Center);
 
-        CentralPanel::default()
-            .frame(frame)
-            .show(ctx, |ui| match self.current_page {
-                Page::Start => {
+        match self.current_page {
+            Page::Start => {
+                panel.frame(frame(140.0, 0.0)).show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.add_space(142.0);
-
-                        let heading = RichText::new("Let's get you started.")
-                            .font(FontId::proportional(170.0))
-                            .color(Color32::BLACK);
-                        ui.heading(heading);
+                        ui.heading(heading("Let's get you started.", 170.0));
 
                         ui.add_space(91.0);
 
@@ -157,12 +159,12 @@ impl eframe::App for OobeApp {
                             self.current_page.advance()
                         }
                     });
-                }
-                Page::Firefox => {
+                });
+            }
+            Page::Firefox => {
+                panel.frame(frame(100.0, 200.0)).show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.add_space(top_margin);
-
-                        ui.heading(heading_text("You can use Firefox to browse the web."));
+                        ui.heading(heading("You can use Firefox to browse the web.", 100.0));
 
                         ui.horizontal(|ui| {
                             ui.add_space(90.0);
@@ -179,14 +181,17 @@ impl eframe::App for OobeApp {
                             }
                         });
                     });
-                }
-                Page::Gmail => {
+                });
+            }
+            Page::Gmail => {
+                panel.frame(frame(100.0, 170.0)).show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.add_space(top_margin);
-
-                        ui.heading(heading_text(
+                        ui.heading(heading(
                             "You can use Gmail to send and receive emails.",
+                            100.0,
                         ));
+
+                        ui.add_space(45.0);
 
                         self.icons[3].show_size(ui, Vec2::new(379.0, 284.0));
 
@@ -198,16 +203,11 @@ impl eframe::App for OobeApp {
                             }
                         });
                     });
-                }
-                Page::OptionalPrograms => {
-                    todo!()
-                }
-            });
+                });
+            }
+            Page::OptionalPrograms => {
+                todo!()
+            }
+        }
     }
-}
-
-fn heading_text(text: &str) -> RichText {
-    RichText::new(text)
-        .font(FontId::proportional(101.0))
-        .color(Color32::BLACK)
 }
