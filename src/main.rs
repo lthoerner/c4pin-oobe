@@ -51,7 +51,9 @@ impl Page {
 struct OptionalPrograms {
     zoom: bool,
     vlc: bool,
-    libreoffice: bool,
+    libreoffice_writer: bool,
+    libreoffice_calc: bool,
+    libreoffice_impress: bool,
 }
 
 impl eframe::App for OobeApp {
@@ -128,6 +130,10 @@ impl eframe::App for OobeApp {
                                             &mut self.optional_programs.zoom,
                                             rich("Zoom", 30.0),
                                         );
+                                        ui.label(rich(
+                                            "Join video calls with friends, family, and coworkers.",
+                                            20.0,
+                                        ));
 
                                         ui.separator();
 
@@ -135,13 +141,43 @@ impl eframe::App for OobeApp {
                                             &mut self.optional_programs.vlc,
                                             rich("VLC", 30.0),
                                         );
+                                        ui.label(rich(
+                                            "Play audio and video files, such as music and movies.",
+                                            20.0,
+                                        ));
 
                                         ui.separator();
 
                                         ui.checkbox(
-                                            &mut self.optional_programs.libreoffice,
-                                            rich("LibreOffice", 30.0),
+                                            &mut self.optional_programs.libreoffice_writer,
+                                            rich("LibreOffice Writer", 30.0),
                                         );
+                                        ui.label(rich(
+                                            "Create and edit document, similar to MS Word.",
+                                            20.0,
+                                        ));
+
+                                        ui.separator();
+
+                                        ui.checkbox(
+                                            &mut self.optional_programs.libreoffice_calc,
+                                            rich("LibreOffice Calc", 30.0),
+                                        );
+                                        ui.label(rich(
+                                            "Create and edit spreadsheets, similar to MS Excel.",
+                                            20.0,
+                                        ));
+
+                                        ui.separator();
+
+                                        ui.checkbox(
+                                            &mut self.optional_programs.libreoffice_impress,
+                                            rich("LibreOffice Impress", 30.0),
+                                        );
+                                        ui.label(rich(
+                                            "Create and edit slideshows, similar to MS PowerPoint.",
+                                            20.0,
+                                        ));
                                     });
                                 });
                             });
