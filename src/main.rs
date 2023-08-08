@@ -1,6 +1,6 @@
 use egui::{
     hex_color, Align, Button, CentralPanel, Color32, FontData, FontDefinitions, FontFamily, FontId,
-    Frame, Layout, Margin, RichText, Rounding, Vec2,
+    Frame, Layout, Margin, RichText, Rounding, Ui, Vec2,
 };
 use egui_extras::RetainedImage;
 
@@ -129,15 +129,24 @@ impl eframe::App for OobeApp {
                 .color(Color32::BLACK)
         };
 
-        let next_button_text = RichText::new("Next")
-            .font(FontId::proportional(38.0))
-            .color(Color32::WHITE);
-        let next_button = Button::new(next_button_text)
-            .min_size(Vec2::new(335.0, 96.0))
-            .fill(hex_color!("#3D00A1"))
-            .rounding(Rounding::default().at_least(17.0));
+        let add_button = |app: &mut OobeApp, ui: &mut Ui, text: &str| {
+            let button_text = RichText::new(text)
+                .font(FontId::proportional(38.0))
+                .color(Color32::WHITE);
+            let button = Button::new(button_text)
+                .min_size(Vec2::new(335.0, 96.0))
+                .fill(hex_color!("#3D00A1"))
+                .rounding(Rounding::default().at_least(17.0));
 
-        let bottom_alignment = Layout::bottom_up(Align::Center);
+            let bottom_alignment = Layout::bottom_up(Align::Center);
+            ui.with_layout(bottom_alignment, |ui| {
+                ui.add_space(64.0);
+
+                if ui.add(button).clicked() {
+                    app.current_page.advance()
+                }
+            });
+        };
 
         match self.current_page {
             Page::Start => {
@@ -147,17 +156,7 @@ impl eframe::App for OobeApp {
 
                         ui.add_space(91.0);
 
-                        let start_button_text = RichText::new("Start")
-                            .font(FontId::proportional(63.0))
-                            .color(Color32::WHITE);
-                        let start_button = Button::new(start_button_text)
-                            .min_size(Vec2::new(413.0, 138.0))
-                            .fill(hex_color!("#3D00A1"))
-                            .rounding(Rounding::default().at_least(17.0));
-
-                        if ui.add(start_button).clicked() {
-                            self.current_page.advance()
-                        }
+                        add_button(self, ui, "Start");
                     });
                 });
             }
@@ -175,16 +174,9 @@ impl eframe::App for OobeApp {
                             self.icons[1].show_size(ui, Vec2::new(204.0, 136.0));
                             ui.add_space(20.0);
                             self.icons[2].show_size(ui, Vec2::new(325.0, 324.0));
-                            ui.add_space(106.0);
                         });
 
-                        ui.with_layout(bottom_alignment, |ui| {
-                            ui.add_space(64.0);
-
-                            if ui.add(next_button).clicked() {
-                                self.current_page.advance()
-                            }
-                        });
+                        add_button(self, ui, "Next");
                     });
                 });
             }
@@ -200,13 +192,7 @@ impl eframe::App for OobeApp {
 
                         self.icons[3].show_size(ui, Vec2::new(379.0, 284.0));
 
-                        ui.with_layout(bottom_alignment, |ui| {
-                            ui.add_space(64.0);
-
-                            if ui.add(next_button).clicked() {
-                                self.current_page.advance()
-                            }
-                        });
+                        add_button(self, ui, "Next");
                     });
                 });
             }
