@@ -1,6 +1,6 @@
 use egui::{
     Align, Button, CentralPanel, Color32, FontId, Layout, Margin, RichText, Rounding, ScrollArea,
-    Ui, Vec2,
+    Ui, Vec2, TextEdit,
 };
 
 fn main() {
@@ -21,6 +21,7 @@ fn main() {
 struct OobeApp {
     current_page: Page,
     optional_programs: OptionalPrograms,
+    account_info: AccountInfo,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -56,6 +57,14 @@ struct OptionalPrograms {
     libreoffice_impress: bool,
 }
 
+#[derive(Default)]
+struct AccountInfo {
+    name: String,
+    username: String,
+    password: String,
+    confirm_password: String,
+}
+
 impl eframe::App for OobeApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
@@ -79,6 +88,14 @@ impl eframe::App for OobeApp {
                     app.current_page.advance()
                 }
             });
+        };
+
+        // Inner frame for the optional programs list and account creation box.
+        let inner_frame = egui::Frame {
+            inner_margin: Margin::symmetric(10.0, 10.0),
+            rounding: Rounding::default().at_least(10.0),
+            fill: Color32::GRAY,
+            ..Default::default()
         };
 
         CentralPanel::default().show(ctx, |ui| {
@@ -110,14 +127,6 @@ impl eframe::App for OobeApp {
                         add_heading(ui, "Select optional programs.");
 
                         ui.add_space(15.0);
-
-                        // Creates an inner frame for the optional programs selection list.
-                        let inner_frame = egui::Frame {
-                            inner_margin: Margin::symmetric(10.0, 10.0),
-                            rounding: Rounding::default().at_least(10.0),
-                            fill: Color32::GRAY,
-                            ..Default::default()
-                        };
 
                         ui.allocate_ui(Vec2::new(524.0, 170.0), |ui| {
                             ui.visuals_mut().override_text_color = Some(Color32::BLACK);
@@ -186,7 +195,40 @@ impl eframe::App for OobeApp {
 
                     add_button(self, ui, "Next");
                 }
-                _ => todo!(),
+                Account => {
+                    ui.vertical_centered(|ui| {
+                        add_heading(ui, "Create a user account.");
+
+                        ui.allocate_ui(Vec2::new(524.0, 170.0), |ui| {
+                            ui.visuals_mut().override_text_color = Some(Color32::BLACK);
+                            inner_frame.show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.vertical(|ui| {
+                                        ui.label(rich("Full Name", 17.0));
+                                        ui.add(TextEdit::singleline(&mut self.account_info.name).desired_width(200.0));
+                                        ui.label(rich("Username", 17.0));
+                                        ui.add(TextEdit::singleline(&mut self.account_info.username).desired_width(200.0));
+                                    });
+
+                                    ui.add_space(36.0);
+                                    ui.separator();
+                                    ui.add_space(36.0);
+
+                                    ui.vertical(|ui| {
+                                        ui.label(rich("Password", 17.0));
+                                        ui.add(TextEdit::singleline(&mut self.account_info.password).desired_width(200.0));
+                                        ui.label(rich("Confirm Password", 17.0));
+                                        ui.add(TextEdit::singleline(&mut self.account_info.confirm_password).desired_width(200.0));
+                                        
+                                        ui.label(rich("If you forget this password, you will lose all of your files and programs.", 12.0));
+                                    });
+                                });
+                            });
+                        });
+                    });
+
+                    add_button(self, ui, "Finish");
+                }
             }
         });
     }
