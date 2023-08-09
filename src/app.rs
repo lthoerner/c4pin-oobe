@@ -2,12 +2,23 @@ use egui::{
     Align, Button, CentralPanel, Color32, FontId, Layout, Margin, RichText, Rounding, ScrollArea,
     TextEdit, Ui, Vec2,
 };
+use egui_extras::RetainedImage;
 
 #[derive(Default)]
 pub struct OobeApp {
     current_page: Page,
     optional_programs: OptionalPrograms,
     account_info: AccountInfo,
+    background_image: Option<RetainedImage>,
+}
+
+impl OobeApp {
+    pub fn new(background_image: RetainedImage) -> Self {
+        Self {
+            background_image: Some(background_image),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Default, Clone, Copy)]
@@ -54,22 +65,22 @@ struct AccountInfo {
 
 impl eframe::App for OobeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let add_heading = |ui: &mut Ui, text: &str| {
-            ui.add_space(20.0);
-            ui.heading(rich(text, 48.0));
+        let add_heading = |ui: &mut Ui, text: &str, margin: f32, size: f32| {
+            ui.add_space(margin);
+            ui.heading(rich(text, size));
         };
 
         let add_button = |app: &mut OobeApp, ui: &mut Ui, text: &str| {
             let button_text = RichText::new(text)
-                .font(FontId::proportional(25.0))
+                .font(FontId::proportional(38.0))
                 .color(Color32::WHITE);
             let button = Button::new(button_text)
-                .min_size(Vec2::new(120.0, 40.0))
+                .min_size(Vec2::new(335.0, 96.0))
                 .rounding(Rounding::default().at_least(17.0));
 
             let bottom_alignment = Layout::bottom_up(Align::Center);
             ui.with_layout(bottom_alignment, |ui| {
-                ui.add_space(20.0);
+                ui.add_space(62.0);
 
                 if ui.add(button).clicked() {
                     app.current_page.advance()
@@ -92,15 +103,23 @@ impl eframe::App for OobeApp {
         // Inner frame for the optional programs list and account creation box.
         let inner_frame = egui::Frame {
             inner_margin: Margin::symmetric(10.0, 10.0),
-            rounding: Rounding::default().at_least(10.0),
+            rounding: Rounding::default().at_least(28.0),
             fill: Color32::WHITE,
             ..Default::default()
         };
 
         let outer_frame = egui::Frame {
-            fill: Color32::GRAY,
+            fill: Color32::TRANSPARENT,
+            inner_margin: Margin::same(0.0),
             ..Default::default()
         };
+
+        // Add the background pattern to render the main UI over.
+        CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
+            if let Some(background_image) = &self.background_image {
+                ui.image(background_image.texture_id(ctx), Vec2::new(1512.0, 982.0));
+            }
+        });
 
         CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
             ui.visuals_mut().override_text_color = Some(Color32::BLACK);
@@ -109,32 +128,32 @@ impl eframe::App for OobeApp {
             match self.current_page {
                 Start => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "Let's get you started.");
+                        add_heading(ui, "Let's get you started.", 142.0, 170.0);
                     });
 
                     add_button(self, ui, "Start");
                 }
                 Firefox => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "You can use Firefox to browse the web.");
+                        add_heading(ui, "You can use Firefox to browse the web.", 104.0, 101.0);
                     });
 
                     add_button(self, ui, "Next");
                 }
                 Gmail => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "You can use Gmail to send and receive emails.");
+                        add_heading(ui, "You can use Gmail to send and receive emails.", 104.0, 101.0);
                     });
 
                     add_button(self, ui, "Next");
                 }
                 Optionals => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "Select optional programs.");
+                        add_heading(ui, "Select optional programs.", 104.0, 101.0);
 
                         ui.add_space(15.0);
 
-                        ui.allocate_ui(Vec2::new(524.0, 170.0), |ui| {
+                        ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
                             inner_frame.show(ui, |ui| {
                                 let scroll_area =
                                     ScrollArea::vertical().auto_shrink([false, false]);
@@ -192,9 +211,9 @@ impl eframe::App for OobeApp {
                 }
                 Account => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "Create a user account.");
+                        add_heading(ui, "Create a user account.", 104.0, 101.0);
 
-                        ui.allocate_ui(Vec2::new(524.0, 170.0), |ui| {
+                        ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
                             inner_frame.show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     ui.vertical(|ui| {
