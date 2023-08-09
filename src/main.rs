@@ -1,6 +1,6 @@
 use egui::{
     Align, Button, CentralPanel, Color32, FontId, Layout, Margin, RichText, Rounding, ScrollArea,
-    Ui, Vec2, TextEdit,
+    TextEdit, Ui, Vec2,
 };
 
 fn main() {
@@ -43,7 +43,8 @@ impl Page {
             Firefox => Gmail,
             Gmail => Optionals,
             Optionals => Account,
-            Account => *self,
+            // TODO: This will be replaced later with a function or method.
+            Account => std::process::exit(0),
         }
     }
 }
@@ -66,8 +67,6 @@ struct AccountInfo {
 }
 
 impl eframe::App for OobeApp {
-    /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let add_heading = |ui: &mut Ui, text: &str| {
             ui.add_space(20.0);
@@ -75,7 +74,9 @@ impl eframe::App for OobeApp {
         };
 
         let add_button = |app: &mut OobeApp, ui: &mut Ui, text: &str| {
-            let button_text = RichText::new(text).font(FontId::proportional(25.0));
+            let button_text = RichText::new(text)
+                .font(FontId::proportional(25.0))
+                .color(Color32::WHITE);
             let button = Button::new(button_text)
                 .min_size(Vec2::new(120.0, 40.0))
                 .rounding(Rounding::default().at_least(17.0));
@@ -90,15 +91,34 @@ impl eframe::App for OobeApp {
             });
         };
 
+        let add_optional_program =
+            |ui: &mut Ui, name: &str, description: &str, editing: &mut bool| {
+                ui.checkbox(editing, rich(name, 30.0));
+                ui.label(rich(description, 20.0));
+            };
+
+        let add_entry_field = |ui: &mut Ui, name: &str, editing: &mut String| {
+            ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
+            ui.label(rich(name, 17.0));
+            ui.add(TextEdit::singleline(editing).desired_width(200.0));
+        };
+
         // Inner frame for the optional programs list and account creation box.
         let inner_frame = egui::Frame {
             inner_margin: Margin::symmetric(10.0, 10.0),
             rounding: Rounding::default().at_least(10.0),
+            fill: Color32::WHITE,
+            ..Default::default()
+        };
+
+        let outer_frame = egui::Frame {
             fill: Color32::GRAY,
             ..Default::default()
         };
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
+            ui.visuals_mut().override_text_color = Some(Color32::BLACK);
+
             use Page::*;
             match self.current_page {
                 Start => {
@@ -135,58 +155,48 @@ impl eframe::App for OobeApp {
                                     ScrollArea::vertical().auto_shrink([false, false]);
                                 scroll_area.show(ui, |ui| {
                                     ui.vertical(|ui| {
-                                        ui.checkbox(
-                                            &mut self.optional_programs.zoom,
-                                            rich("Zoom", 30.0),
-                                        );
-                                        ui.label(rich(
+                                        add_optional_program(
+                                            ui,
+                                            "Zoom",
                                             "Join video calls with friends, family, and coworkers.",
-                                            20.0,
-                                        ));
+                                            &mut self.optional_programs.zoom,
+                                        );
 
                                         ui.separator();
 
-                                        ui.checkbox(
-                                            &mut self.optional_programs.vlc,
-                                            rich("VLC", 30.0),
-                                        );
-                                        ui.label(rich(
+                                        add_optional_program(
+                                            ui,
+                                            "VLC",
                                             "Play audio and video files, such as music and movies.",
-                                            20.0,
-                                        ));
+                                            &mut self.optional_programs.vlc,
+                                        );
 
                                         ui.separator();
 
-                                        ui.checkbox(
-                                            &mut self.optional_programs.libreoffice_writer,
-                                            rich("LibreOffice Writer", 30.0),
-                                        );
-                                        ui.label(rich(
+                                        add_optional_program(
+                                            ui,
+                                            "LibreOffice Writer",
                                             "Create and edit document, similar to MS Word.",
-                                            20.0,
-                                        ));
+                                            &mut self.optional_programs.libreoffice_writer,
+                                        );
 
                                         ui.separator();
 
-                                        ui.checkbox(
-                                            &mut self.optional_programs.libreoffice_calc,
-                                            rich("LibreOffice Calc", 30.0),
-                                        );
-                                        ui.label(rich(
+                                        add_optional_program(
+                                            ui,
+                                            "LibreOffice Calc",
                                             "Create and edit spreadsheets, similar to MS Excel.",
-                                            20.0,
-                                        ));
+                                            &mut self.optional_programs.libreoffice_calc,
+                                        );
 
                                         ui.separator();
 
-                                        ui.checkbox(
-                                            &mut self.optional_programs.libreoffice_impress,
-                                            rich("LibreOffice Impress", 30.0),
-                                        );
-                                        ui.label(rich(
+                                        add_optional_program(
+                                            ui,
+                                            "LibreOffice Impress",
                                             "Create and edit slideshows, similar to MS PowerPoint.",
-                                            20.0,
-                                        ));
+                                            &mut self.optional_programs.libreoffice_impress,
+                                        );
                                     });
                                 });
                             });
@@ -200,14 +210,11 @@ impl eframe::App for OobeApp {
                         add_heading(ui, "Create a user account.");
 
                         ui.allocate_ui(Vec2::new(524.0, 170.0), |ui| {
-                            ui.visuals_mut().override_text_color = Some(Color32::BLACK);
                             inner_frame.show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     ui.vertical(|ui| {
-                                        ui.label(rich("Full Name", 17.0));
-                                        ui.add(TextEdit::singleline(&mut self.account_info.name).desired_width(200.0));
-                                        ui.label(rich("Username", 17.0));
-                                        ui.add(TextEdit::singleline(&mut self.account_info.username).desired_width(200.0));
+                                        add_entry_field(ui, "Full Name", &mut self.account_info.name);
+                                        add_entry_field(ui, "Username", &mut self.account_info.username);
                                     });
 
                                     ui.add_space(36.0);
@@ -215,11 +222,8 @@ impl eframe::App for OobeApp {
                                     ui.add_space(36.0);
 
                                     ui.vertical(|ui| {
-                                        ui.label(rich("Password", 17.0));
-                                        ui.add(TextEdit::singleline(&mut self.account_info.password).desired_width(200.0));
-                                        ui.label(rich("Confirm Password", 17.0));
-                                        ui.add(TextEdit::singleline(&mut self.account_info.confirm_password).desired_width(200.0));
-                                        
+                                        add_entry_field(ui, "Password", &mut self.account_info.password);
+                                        add_entry_field(ui, "Confirm Password", &mut self.account_info.confirm_password);
                                         ui.label(rich("If you forget this password, you will lose all of your files and programs.", 12.0));
                                     });
                                 });
