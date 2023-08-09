@@ -11,7 +11,7 @@ fn main() {
     };
 
     eframe::run_native(
-        "OOBE",
+        "C4PIN OOBE",
         native_options,
         Box::new(|_| Box::<OobeApp>::default()),
     )

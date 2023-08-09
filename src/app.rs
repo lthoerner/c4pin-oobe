@@ -135,7 +135,6 @@ impl eframe::App for OobeApp {
                         ui.add_space(15.0);
 
                         ui.allocate_ui(Vec2::new(524.0, 170.0), |ui| {
-                            ui.visuals_mut().override_text_color = Some(Color32::BLACK);
                             inner_frame.show(ui, |ui| {
                                 let scroll_area =
                                     ScrollArea::vertical().auto_shrink([false, false]);
