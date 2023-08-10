@@ -25,86 +25,50 @@ pub struct OobeApp {
 impl OobeApp {
     pub fn new(context: &CreationContext) -> Self {
         let mut fonts = FontDefinitions::default();
-        fonts.font_data.insert(
-            "sf_pro_bold".to_owned(),
-            FontData::from_static(include_bytes!("../assets/SF-Pro-Display-Bold.otf")),
-        );
-        // fonts.font_data.insert(
-        //     "sf_pro_medium".to_owned(),
-        //     FontData::from_static(include_bytes!("../assets/SF-Pro-Display-Medium.otf")),
-        // );
-        // fonts.font_data.insert(
-        //     "sf_pro_regular".to_owned(),
-        //     FontData::from_static(include_bytes!("../assets/SF-Pro-Display-Regular.otf")),
-        // );
+        let families = &mut fonts.families;
 
-        fonts
-            .families
-            .get_mut(&FontFamily::Proportional)
-            .unwrap()
-            .insert(0, "sf_pro_bold".to_owned());
+        macro_rules! add_font {
+            ($name:literal) => {
+                fonts.font_data.insert(
+                    $name.to_owned(),
+                    FontData::from_static(include_bytes!(concat!("../assets/", $name, ".otf"))),
+                );
+
+                families.insert(FontFamily::Name($name.into()), vec![$name.to_owned()]);
+            };
+        }
+
+        add_font!("sf_pro_bold");
+        add_font!("sf_pro_medium");
+        add_font!("sf_pro_regular");
 
         context.egui_ctx.set_fonts(fonts);
+
+        macro_rules! get_image {
+            ($name:literal) => {
+                RetainedImage::from_image_bytes(
+                    $name,
+                    include_bytes!(concat!("../assets/", $name, ".png")),
+                )
+                .unwrap()
+            };
+        }
 
         Self {
             current_page: Page::default(),
             optional_programs: OptionalPrograms::default(),
             account_info: AccountInfo::default(),
-            background_image: RetainedImage::from_image_bytes(
-                "polkadot_background",
-                include_bytes!("../assets/polkadot_background.png"),
-            )
-            .unwrap(),
-            start_button_image: RetainedImage::from_image_bytes(
-                "start_button",
-                include_bytes!("../assets/start_button.png"),
-            )
-            .unwrap(),
-            next_button_image: RetainedImage::from_image_bytes(
-                "next_button",
-                include_bytes!("../assets/next_button.png"),
-            )
-            .unwrap(),
-            finish_button_image: RetainedImage::from_image_bytes(
-                "finish_button",
-                include_bytes!("../assets/finish_button.png"),
-            )
-            .unwrap(),
-            firefox_icon: RetainedImage::from_image_bytes(
-                "firefox_icon",
-                include_bytes!("../assets/firefox_icon.png"),
-            )
-            .unwrap(),
-            gmail_icon: RetainedImage::from_image_bytes(
-                "gmail_icon",
-                include_bytes!("../assets/gmail_icon.png"),
-            )
-            .unwrap(),
-            zoom_icon: RetainedImage::from_image_bytes(
-                "zoom_icon",
-                include_bytes!("../assets/zoom_icon.png"),
-            )
-            .unwrap(),
-            vlc_icon: RetainedImage::from_image_bytes(
-                "vlc_icon",
-                include_bytes!("../assets/vlc_icon.png"),
-            )
-            .unwrap(),
-            lo_writer_icon: RetainedImage::from_image_bytes(
-                "lo_writer_icon",
-                include_bytes!("../assets/lo_writer_icon.png"),
-            )
-            .unwrap(),
-            lo_calc_icon: RetainedImage::from_image_bytes(
-                "lo_calc_icon",
-                include_bytes!("../assets/lo_writer_icon.png"),
-            )
-            .unwrap(),
-            lo_impress_icon: RetainedImage::from_image_bytes(
-                "lo_impress_icon",
-                include_bytes!("../assets/lo_writer_icon.png"),
-            )
-            .unwrap(),
+            background_image: get_image!("polkadot_background"),
+            start_button_image: get_image!("start_button"),
+            next_button_image: get_image!("next_button"),
+            finish_button_image: get_image!("finish_button"),
+            firefox_icon: get_image!("firefox_icon"),
+            gmail_icon: get_image!("gmail_icon"),
+            zoom_icon: get_image!("zoom_icon"),
+            vlc_icon: get_image!("vlc_icon"),
+            lo_writer_icon: get_image!("lo_writer_icon"),
+            lo_calc_icon: get_image!("lo_calc_icon"),
+            lo_impress_icon: get_image!("lo_impress_icon"),
         }
     }
 }
@@ -170,7 +134,7 @@ impl eframe::App for OobeApp {
         let add_heading = |ui: &mut Ui, text: &str, margin: f32, size: f32| {
             ui.add_space(margin);
 
-            let text = rich(text, size).color(hex_color!("#282828"));
+            let text = rich(text, size, FontType::Bold).color(hex_color!("#282828"));
             ui.heading(text);
         };
 
@@ -211,15 +175,19 @@ impl eframe::App for OobeApp {
 
                     ui.vertical(|ui| {
                         add_heading(ui, name, 0.0, 39.0);
-                        ui.label(rich(description, 29.0));
+                        ui.label(rich(description, 29.0, FontType::Regular));
                     });
                 });
             };
 
         let add_entry_field = |ui: &mut Ui, name: &str, editing: &mut String| {
             ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
-            ui.label(rich(name, 17.0));
-            ui.add(TextEdit::singleline(editing).desired_width(200.0));
+            ui.label(rich(name, 39.0, FontType::Bold));
+            ui.add(
+                TextEdit::singleline(editing)
+                    .min_size(Vec2::new(440.0, 54.0))
+                    .font(FontId::new(35.0, FontType::Regular.into())),
+            );
         };
 
         // Inner frame for the optional programs list and account creation box.
@@ -364,7 +332,7 @@ impl eframe::App for OobeApp {
                                     ui.vertical(|ui| {
                                         add_entry_field(ui, "Password", &mut self.account_info.password);
                                         add_entry_field(ui, "Confirm Password", &mut self.account_info.confirm_password);
-                                        ui.label(rich("If you forget this password, you will lose all of your files and programs.", 12.0));
+                                        ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
                                     });
                                 });
                             });
@@ -378,6 +346,28 @@ impl eframe::App for OobeApp {
     }
 }
 
-fn rich(text: &str, size: f32) -> RichText {
-    RichText::new(text).font(FontId::proportional(size))
+enum FontType {
+    Regular,
+    Medium,
+    Bold,
+}
+
+impl From<FontType> for FontFamily {
+    fn from(value: FontType) -> Self {
+        match value {
+            FontType::Regular => FontFamily::Name("sf_pro_regular".into()),
+            FontType::Medium => FontFamily::Name("sf_pro_medium".into()),
+            FontType::Bold => FontFamily::Name("sf_pro_bold".into()),
+        }
+    }
+}
+
+fn rich(text: &str, size: f32, font_type: FontType) -> RichText {
+    let family = FontFamily::Name(match font_type {
+        FontType::Regular => "sf_pro_regular".into(),
+        FontType::Medium => "sf_pro_medium".into(),
+        FontType::Bold => "sf_pro_bold".into(),
+    });
+
+    RichText::new(text).font(FontId::new(size, family))
 }
