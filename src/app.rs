@@ -84,6 +84,45 @@ enum EntryField {
     ConfirmPassword,
 }
 
+// Creates a strip of a given size which is centered horizontally.
+macro_rules! strip {
+    ($ui:ident, $width:literal, $height:literal, $contents:expr) => {
+        vertical_strip!($ui, $height, |mut strip| {
+            strip.cell(|ui| {
+                horizontal_strip!(ui, [remainder, $width, remainder], $contents);
+            });
+        });
+    };
+}
+
+// Creates a vertical strip supporting one cell.
+macro_rules! vertical_strip {
+    ($ui:ident, $height:literal, $contents:expr) => {
+        StripBuilder::new($ui)
+            .size(Size::exact($height))
+            .vertical($contents)
+    };
+}
+
+// Creates a centered horizontal strip supporting a variable number of cells.
+macro_rules! horizontal_strip {
+    ($ui:ident, [$($size:tt),*], $contents:expr) => {
+        StripBuilder::new($ui)
+            $(.size(bounds!($size)))*
+            .horizontal($contents)
+    };
+}
+
+// Inteprets the shorthand syntax for strip bounds (into `Size`s).
+macro_rules! bounds {
+    (remainder) => {
+        Size::remainder()
+    };
+    ($size:literal) => {
+        Size::exact($size)
+    };
+}
+
 impl OobeApp {
     pub fn new(context: &CreationContext) -> Self {
         let mut fonts = FontDefinitions::default();
@@ -312,53 +351,44 @@ impl OobeApp {
 
             ui.add_space(38.0);
 
-            StripBuilder::new(ui).size(Size::exact(500.0)).vertical(|mut strip| {
+            strip!(ui, 1263.0, 500.0, |mut strip| {
+                strip.empty();
                 strip.cell(|ui| {
-                    StripBuilder::new(ui).size(Size::remainder()).size(Size::exact(1263.0)).size(Size::remainder()).horizontal(|mut strip| {
-                        strip.empty();
-                        strip.cell(|ui| {
-                            inner_frame
-                            .show(ui, |ui| {
-                                StripBuilder::new(ui)
-                                    .size(Size::exact(440.0))
-                                    .size(Size::remainder())
-                                    .size(Size::exact(440.0))
-                                    .horizontal(|mut strip| {
-                                        use EntryField::*;
-                                        strip.cell(|ui| {
-                                            let left_layout = Layout::top_down(Align::Min);
-                                            ui.with_layout(left_layout, |ui| {
-                                                self.add_entry_field(ui, Fullname);
-                                                self.add_entry_field(ui, Username);
-                                            });
-                                        });
+                    inner_frame
+                    .show(ui, |ui| {
+                        horizontal_strip!(ui, [440.0, remainder, 440.0], |mut strip| {
+                            use EntryField::*;
+                            strip.cell(|ui| {
+                                let left_layout = Layout::top_down(Align::Min);
+                                ui.with_layout(left_layout, |ui| {
+                                    self.add_entry_field(ui, Fullname);
+                                    self.add_entry_field(ui, Username);
+                                });
+                            });
 
-                                        strip.cell(|ui| {
-                                            ui.with_layout(
-                                                Layout::centered_and_justified(
-                                                    Direction::RightToLeft,
-                                                ),
-                                                |ui| {
-                                                    ui.separator();
-                                                },
-                                            );
-                                        });
+                            strip.cell(|ui| {
+                                ui.with_layout(
+                                    Layout::centered_and_justified(
+                                        Direction::RightToLeft,
+                                    ),
+                                    |ui| {
+                                        ui.separator();
+                                    },
+                                );
+                            });
 
-                                        strip.cell(|ui| {
-                                            let right_layout = Layout::top_down(Align::Max);
-                                            ui.with_layout(right_layout, |ui| {
-                                                self.add_entry_field(ui, Password);
-                                                self.add_entry_field(ui, ConfirmPassword);
-                                                ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
-                                            });
-                                        });
+                            strip.cell(|ui| {
+                                let right_layout = Layout::top_down(Align::Max);
+                                ui.with_layout(right_layout, |ui| {
+                                    self.add_entry_field(ui, Password);
+                                    self.add_entry_field(ui, ConfirmPassword);
+                                    ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
                                 });
                             });
                         });
-
-                        strip.empty();
                     });
                 });
+                strip.empty();
             });
         });
 
