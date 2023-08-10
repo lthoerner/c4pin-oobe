@@ -180,15 +180,20 @@ impl eframe::App for OobeApp {
                 });
             };
 
-        let add_entry_field = |ui: &mut Ui, name: &str, editing: &mut String| {
-            ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
-            ui.label(rich(name, 39.0, FontType::Bold));
-            ui.add(
-                TextEdit::singleline(editing)
-                    .min_size(Vec2::new(440.0, 54.0))
-                    .font(FontId::new(35.0, FontType::Regular.into())),
-            );
-        };
+        let add_entry_field =
+            |ui: &mut Ui, name: &str, hint: Option<&str>, editing: &mut String, password: bool| {
+                ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
+                ui.label(rich(name, 39.0, FontType::Bold));
+                ui.add(
+                    TextEdit::singleline(editing)
+                        .min_size(Vec2::new(440.0, 54.0))
+                        .font(FontId::new(35.0, FontType::Medium.into()))
+                        .password(password)
+                        .hint_text(
+                            RichText::new(hint.unwrap_or_default()).color(hex_color!("#737373")),
+                        ),
+                );
+            };
 
         // Inner frame for the optional programs list and account creation box.
         let inner_frame = egui::Frame {
@@ -321,8 +326,8 @@ impl eframe::App for OobeApp {
                             inner_frame.show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     ui.vertical(|ui| {
-                                        add_entry_field(ui, "Full Name", &mut self.account_info.name);
-                                        add_entry_field(ui, "Username", &mut self.account_info.username);
+                                        add_entry_field(ui, "Full Name", Some("Willem Dafoe"), &mut self.account_info.name, false);
+                                        add_entry_field(ui, "Username", Some("willdafoe"), &mut self.account_info.username, false);
                                     });
 
                                     ui.add_space(36.0);
@@ -330,8 +335,8 @@ impl eframe::App for OobeApp {
                                     ui.add_space(36.0);
 
                                     ui.vertical(|ui| {
-                                        add_entry_field(ui, "Password", &mut self.account_info.password);
-                                        add_entry_field(ui, "Confirm Password", &mut self.account_info.confirm_password);
+                                        add_entry_field(ui, "Password", None, &mut self.account_info.password, true);
+                                        add_entry_field(ui, "Confirm Password", None, &mut self.account_info.confirm_password, true);
                                         ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
                                     });
                                 });
