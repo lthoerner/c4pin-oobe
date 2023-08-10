@@ -64,25 +64,24 @@ struct AccountInfo {
     confirm_password: String,
 }
 
-enum ButtonType {
+enum Button {
     Start,
     Next,
     Finish,
 }
 
-enum EntryFieldType {
-    Fullname,
-    Username,
-    Password,
-    ConfirmPassword,
-}
-
-enum Icon {
+enum OptionalProgram {
     Zoom,
     Vlc,
     LoWriter,
     LoCalc,
     LoImpress,
+}
+enum EntryField {
+    Fullname,
+    Username,
+    Password,
+    ConfirmPassword,
 }
 
 impl OobeApp {
@@ -141,8 +140,8 @@ impl OobeApp {
         ui.heading(text);
     }
 
-    fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context, button_type: ButtonType) {
-        use ButtonType::*;
+    fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context, button_type: Button) {
+        use Button::*;
         let button = ImageButton::new(
             match button_type {
                 Start => self.start_button_image.texture_id(ctx),
@@ -163,48 +162,77 @@ impl OobeApp {
         });
     }
 
-    fn add_optional_program(&mut self, ui: &mut Ui, name: &str, description: &str, icon: Icon) {
+    fn add_optional_program(&mut self, ui: &mut Ui, program: OptionalProgram) {
         ui.horizontal(|ui| {
-            use Icon::*;
-            match icon {
-                Zoom => &self.zoom_icon,
-                Vlc => &self.vlc_icon,
-                LoWriter => &self.lo_writer_icon,
-                LoCalc => &self.lo_calc_icon,
-                LoImpress => &self.lo_impress_icon,
-            }
-            .show_scaled(ui, 0.25);
+            use OptionalProgram::*;
+            let (program_icon, program_name, program_description) = match program {
+                Zoom => (
+                    &self.zoom_icon,
+                    "Zoom",
+                    "Join video calls with friends, family, and coworkers.",
+                ),
+                Vlc => (
+                    &self.vlc_icon,
+                    "VLC",
+                    "Play audio and video files, such as music and movies.",
+                ),
+                LoWriter => (
+                    &self.lo_writer_icon,
+                    "LibreOffice Writer",
+                    "Create and edit document, similar to MS Word.",
+                ),
+                LoCalc => (
+                    &self.lo_calc_icon,
+                    "LibreOffice Calc",
+                    "Create and edit spreadsheets, similar to MS Excel.",
+                ),
+                LoImpress => (
+                    &self.lo_impress_icon,
+                    "LibreOffice Impress",
+                    "Create and edit slideshows, similar to MS PowerPoint.",
+                ),
+            };
+
+            program_icon.show_scaled(ui, 0.25);
 
             ui.vertical(|ui| {
-                self.add_heading(ui, name, 39.0, 0.0);
-                ui.label(rich(description, 29.0, FontType::Regular));
+                self.add_heading(ui, program_name, 39.0, 0.0);
+                ui.label(rich(program_description, 29.0, FontType::Regular));
             });
         });
     }
 
-    fn add_entry_field(
-        &mut self,
-        ui: &mut Ui,
-        name: &str,
-        hint: Option<&str>,
-        entry_type: EntryFieldType,
-        password: bool,
-    ) {
-        ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
-        ui.label(rich(name, 39.0, FontType::Bold));
-
-        let edit_text = match entry_type {
-            EntryFieldType::Fullname => &mut self.account_info.name,
-            EntryFieldType::Username => &mut self.account_info.username,
-            EntryFieldType::Password => &mut self.account_info.password,
-            EntryFieldType::ConfirmPassword => &mut self.account_info.confirm_password,
+    fn add_entry_field(&mut self, ui: &mut Ui, entry_field: EntryField) {
+        use EntryField::*;
+        let (field_name, hint, hide_entry, edit_text) = match entry_field {
+            Fullname => (
+                "Full Name",
+                Some("Willem Dafoe"),
+                false,
+                &mut self.account_info.name,
+            ),
+            Username => (
+                "Username",
+                Some("willdafoe"),
+                false,
+                &mut self.account_info.username,
+            ),
+            Password => ("Password", None, true, &mut self.account_info.password),
+            ConfirmPassword => (
+                "Confirm Password",
+                None,
+                true,
+                &mut self.account_info.confirm_password,
+            ),
         };
 
+        ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
+        ui.label(rich(field_name, 39.0, FontType::Bold));
         ui.add(
             TextEdit::singleline(edit_text)
                 .min_size(Vec2::new(440.0, 54.0))
                 .font(FontId::new(35.0, FontType::Medium.into()))
-                .password(password)
+                .password(hide_entry)
                 .hint_text(RichText::new(hint.unwrap_or_default()).color(hex_color!("#737373"))),
         );
     }
@@ -214,7 +242,7 @@ impl OobeApp {
             self.add_heading(ui, "Let's get you\nstarted.", 142.0, 170.0);
         });
 
-        self.add_button(ui, ctx, ButtonType::Start);
+        self.add_button(ui, ctx, Button::Start);
     }
 
     fn render_firefox_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
@@ -224,7 +252,7 @@ impl OobeApp {
             self.firefox_icon.show_scaled(ui, 0.25);
         });
 
-        self.add_button(ui, ctx, ButtonType::Next);
+        self.add_button(ui, ctx, Button::Next);
     }
 
     fn render_gmail_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
@@ -240,7 +268,7 @@ impl OobeApp {
             self.gmail_icon.show_scaled(ui, 0.25);
         });
 
-        self.add_button(ui, ctx, ButtonType::Next);
+        self.add_button(ui, ctx, Button::Next);
     }
 
     fn render_optionals_page(
@@ -259,55 +287,23 @@ impl OobeApp {
                     let scroll_area = ScrollArea::vertical().auto_shrink([false, false]);
                     scroll_area.show(ui, |ui| {
                         ui.vertical(|ui| {
-                            self.add_optional_program(
-                                ui,
-                                "Zoom",
-                                "Join video calls with friends, family, and coworkers.",
-                                Icon::Zoom,
-                            );
-
+                            use OptionalProgram::*;
+                            self.add_optional_program(ui, Zoom);
                             ui.separator();
-
-                            self.add_optional_program(
-                                ui,
-                                "VLC",
-                                "Play audio and video files, such as music and movies.",
-                                Icon::Vlc,
-                            );
-
+                            self.add_optional_program(ui, Vlc);
                             ui.separator();
-
-                            self.add_optional_program(
-                                ui,
-                                "LibreOffice Writer",
-                                "Create and edit document, similar to MS Word.",
-                                Icon::LoWriter,
-                            );
-
+                            self.add_optional_program(ui, LoWriter);
                             ui.separator();
-
-                            self.add_optional_program(
-                                ui,
-                                "LibreOffice Calc",
-                                "Create and edit spreadsheets, similar to MS Excel.",
-                                Icon::LoCalc,
-                            );
-
+                            self.add_optional_program(ui, LoCalc);
                             ui.separator();
-
-                            self.add_optional_program(
-                                ui,
-                                "LibreOffice Impress",
-                                "Create and edit slideshows, similar to MS PowerPoint.",
-                                Icon::LoImpress,
-                            );
+                            self.add_optional_program(ui, LoImpress);
                         });
                     });
                 });
             });
         });
 
-        self.add_button(ui, ctx, ButtonType::Next);
+        self.add_button(ui, ctx, Button::Next);
     }
 
     fn render_account_page(&mut self, ui: &mut Ui, ctx: &egui::Context, inner_frame: &egui::Frame) {
@@ -328,24 +324,12 @@ impl OobeApp {
                                     .size(Size::remainder())
                                     .size(Size::exact(440.0))
                                     .horizontal(|mut strip| {
-                                        use EntryFieldType::*;
+                                        use EntryField::*;
                                         strip.cell(|ui| {
                                             let left_layout = Layout::top_down(Align::Min);
                                             ui.with_layout(left_layout, |ui| {
-                                                self.add_entry_field(
-                                                    ui,
-                                                    "Full Name",
-                                                    Some("Willem Dafoe"),
-                                                    Fullname,
-                                                    false,
-                                                );
-                                                self.add_entry_field(
-                                                    ui,
-                                                    "Username",
-                                                    Some("willdafoe"),
-                                                    Username,
-                                                    false,
-                                                );
+                                                self.add_entry_field(ui, Fullname);
+                                                self.add_entry_field(ui, Username);
                                             });
                                         });
 
@@ -363,8 +347,8 @@ impl OobeApp {
                                         strip.cell(|ui| {
                                             let right_layout = Layout::top_down(Align::Max);
                                             ui.with_layout(right_layout, |ui| {
-                                                self.add_entry_field(ui, "Password", None, Password, true);
-                                                self.add_entry_field(ui, "Confirm Password", None, ConfirmPassword, true);
+                                                self.add_entry_field(ui, Password);
+                                                self.add_entry_field(ui, ConfirmPassword);
                                                 ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
                                             });
                                         });
@@ -378,7 +362,7 @@ impl OobeApp {
             });
         });
 
-        self.add_button(ui, ctx, ButtonType::Finish);
+        self.add_button(ui, ctx, Button::Finish);
     }
 }
 
