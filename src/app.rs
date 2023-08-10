@@ -1,7 +1,7 @@
 use eframe::CreationContext;
 use egui::{
-    Align, CentralPanel, Color32, FontData, FontDefinitions, FontFamily, FontId, ImageButton,
-    Layout, Margin, RichText, Rounding, ScrollArea, TextEdit, Ui, Vec2,
+    hex_color, Align, CentralPanel, Color32, FontData, FontDefinitions, FontFamily, FontId,
+    ImageButton, Layout, Margin, RichText, Rounding, ScrollArea, TextEdit, Ui, Vec2,
 };
 use egui_extras::RetainedImage;
 
@@ -13,16 +13,12 @@ pub struct OobeApp {
     start_button_image: RetainedImage,
     next_button_image: RetainedImage,
     finish_button_image: RetainedImage,
+    firefox_icon: RetainedImage,
+    gmail_icon: RetainedImage,
 }
 
 impl OobeApp {
-    pub fn new(
-        context: &CreationContext,
-        background_image: RetainedImage,
-        start_button_image: RetainedImage,
-        next_button_image: RetainedImage,
-        finish_button_image: RetainedImage,
-    ) -> Self {
+    pub fn new(context: &CreationContext) -> Self {
         let mut fonts = FontDefinitions::default();
         fonts.font_data.insert(
             "sf_pro_bold".to_owned(),
@@ -49,10 +45,36 @@ impl OobeApp {
             current_page: Page::default(),
             optional_programs: OptionalPrograms::default(),
             account_info: AccountInfo::default(),
-            background_image,
-            start_button_image,
-            next_button_image,
-            finish_button_image,
+            background_image: RetainedImage::from_image_bytes(
+                "polkadot_background",
+                include_bytes!("../assets/polkadot_background.png"),
+            )
+            .unwrap(),
+            start_button_image: RetainedImage::from_image_bytes(
+                "start_button",
+                include_bytes!("../assets/start_button.png"),
+            )
+            .unwrap(),
+            next_button_image: RetainedImage::from_image_bytes(
+                "next_button",
+                include_bytes!("../assets/next_button.png"),
+            )
+            .unwrap(),
+            finish_button_image: RetainedImage::from_image_bytes(
+                "finish_button",
+                include_bytes!("../assets/finish_button.png"),
+            )
+            .unwrap(),
+            firefox_icon: RetainedImage::from_image_bytes(
+                "firefox_icon",
+                include_bytes!("../assets/firefox_icon.png"),
+            )
+            .unwrap(),
+            gmail_icon: RetainedImage::from_image_bytes(
+                "gmail_icon",
+                include_bytes!("../assets/gmail_icon.png"),
+            )
+            .unwrap(),
         }
     }
 }
@@ -109,7 +131,9 @@ impl eframe::App for OobeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let add_heading = |ui: &mut Ui, text: &str, margin: f32, size: f32| {
             ui.add_space(margin);
-            ui.heading(rich(text, size));
+
+            let text = rich(text, size).color(hex_color!("#282828"));
+            ui.heading(text);
         };
 
         let add_button = |app: &mut OobeApp, ui: &mut Ui, button_type: ButtonType| {
@@ -182,14 +206,22 @@ impl eframe::App for OobeApp {
                 }
                 Firefox => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "You can use Firefox to browse the web.", 104.0, 101.0);
+                        add_heading(ui, "You can use Firefox to\nbrowse the web.", 104.0, 101.0);
+
+                        ui.add_space(15.0);
+
+                        self.firefox_icon.show_scaled(ui, 0.25);
                     });
 
                     add_button(self, ui, ButtonType::Next);
                 }
                 Gmail => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "You can use Gmail to send and receive emails.", 104.0, 101.0);
+                        add_heading(ui, "You can use Gmail to\nsend and receive emails.", 104.0, 101.0);
+
+                        ui.add_space(35.0);
+
+                        self.gmail_icon.show_scaled(ui, 0.25);
                     });
 
                     add_button(self, ui, ButtonType::Next);
