@@ -36,8 +36,9 @@ fn main() {
     eframe::run_native(
         "C4PIN OOBE",
         native_options,
-        Box::new(|_| {
+        Box::new(|cc| {
             Box::new(OobeApp::new(
+                cc,
                 background_image,
                 start_button_image,
                 next_button_image,

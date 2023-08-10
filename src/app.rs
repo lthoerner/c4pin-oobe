@@ -1,6 +1,7 @@
+use eframe::CreationContext;
 use egui::{
-    Align, CentralPanel, Color32, FontId, ImageButton, Layout, Margin, RichText, Rounding,
-    ScrollArea, TextEdit, Ui, Vec2,
+    Align, CentralPanel, Color32, FontData, FontDefinitions, FontFamily, FontId, ImageButton,
+    Layout, Margin, RichText, Rounding, ScrollArea, TextEdit, Ui, Vec2,
 };
 use egui_extras::RetainedImage;
 
@@ -16,11 +17,34 @@ pub struct OobeApp {
 
 impl OobeApp {
     pub fn new(
+        context: &CreationContext,
         background_image: RetainedImage,
         start_button_image: RetainedImage,
         next_button_image: RetainedImage,
         finish_button_image: RetainedImage,
     ) -> Self {
+        let mut fonts = FontDefinitions::default();
+        fonts.font_data.insert(
+            "sf_pro_bold".to_owned(),
+            FontData::from_static(include_bytes!("../assets/SF-Pro-Display-Bold.otf")),
+        );
+        // fonts.font_data.insert(
+        //     "sf_pro_medium".to_owned(),
+        //     FontData::from_static(include_bytes!("../assets/SF-Pro-Display-Medium.otf")),
+        // );
+        // fonts.font_data.insert(
+        //     "sf_pro_regular".to_owned(),
+        //     FontData::from_static(include_bytes!("../assets/SF-Pro-Display-Regular.otf")),
+        // );
+
+        fonts
+            .families
+            .get_mut(&FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "sf_pro_bold".to_owned());
+
+        context.egui_ctx.set_fonts(fonts);
+
         Self {
             current_page: Page::default(),
             optional_programs: OptionalPrograms::default(),
