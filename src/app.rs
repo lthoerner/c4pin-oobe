@@ -70,6 +70,13 @@ enum ButtonType {
     Finish,
 }
 
+enum EntryFieldType {
+    Fullname,
+    Username,
+    Password,
+    ConfirmPassword,
+}
+
 enum Icon {
     Zoom,
     Vlc,
@@ -127,85 +134,268 @@ impl OobeApp {
             lo_impress_icon: get_image!("lo_impress_icon"),
         }
     }
+
+    fn add_heading(&mut self, ui: &mut Ui, text: &str, size: f32, margin: f32) {
+        ui.add_space(margin);
+        let text = rich(text, size, FontType::Bold).color(hex_color!("#282828"));
+        ui.heading(text);
+    }
+
+    fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context, button_type: ButtonType) {
+        use ButtonType::*;
+        let button = ImageButton::new(
+            match button_type {
+                Start => self.start_button_image.texture_id(ctx),
+                Next => self.next_button_image.texture_id(ctx),
+                Finish => self.finish_button_image.texture_id(ctx),
+            },
+            Vec2::new(335.0, 96.0),
+        )
+        .frame(false);
+
+        let bottom_alignment = Layout::bottom_up(Align::Center);
+        ui.with_layout(bottom_alignment, |ui| {
+            ui.add_space(62.0);
+
+            if ui.add(button).clicked() {
+                self.current_page.advance()
+            }
+        });
+    }
+
+    fn add_optional_program(&mut self, ui: &mut Ui, name: &str, description: &str, icon: Icon) {
+        ui.horizontal(|ui| {
+            use Icon::*;
+            match icon {
+                Zoom => &self.zoom_icon,
+                Vlc => &self.vlc_icon,
+                LoWriter => &self.lo_writer_icon,
+                LoCalc => &self.lo_calc_icon,
+                LoImpress => &self.lo_impress_icon,
+            }
+            .show_scaled(ui, 0.25);
+
+            ui.vertical(|ui| {
+                self.add_heading(ui, name, 39.0, 0.0);
+                ui.label(rich(description, 29.0, FontType::Regular));
+            });
+        });
+    }
+
+    fn add_entry_field(
+        &mut self,
+        ui: &mut Ui,
+        name: &str,
+        hint: Option<&str>,
+        entry_type: EntryFieldType,
+        password: bool,
+    ) {
+        ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
+        ui.label(rich(name, 39.0, FontType::Bold));
+
+        let edit_text = match entry_type {
+            EntryFieldType::Fullname => &mut self.account_info.name,
+            EntryFieldType::Username => &mut self.account_info.username,
+            EntryFieldType::Password => &mut self.account_info.password,
+            EntryFieldType::ConfirmPassword => &mut self.account_info.confirm_password,
+        };
+
+        ui.add(
+            TextEdit::singleline(edit_text)
+                .min_size(Vec2::new(440.0, 54.0))
+                .font(FontId::new(35.0, FontType::Medium.into()))
+                .password(password)
+                .hint_text(RichText::new(hint.unwrap_or_default()).color(hex_color!("#737373"))),
+        );
+    }
+
+    fn render_start_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+        ui.vertical_centered(|ui| {
+            self.add_heading(ui, "Let's get you\nstarted.", 142.0, 170.0);
+        });
+
+        self.add_button(ui, ctx, ButtonType::Start);
+    }
+
+    fn render_firefox_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+        ui.vertical_centered(|ui| {
+            self.add_heading(ui, "You can use Firefox to\nbrowse the web.", 101.0, 104.0);
+            ui.add_space(15.0);
+            self.firefox_icon.show_scaled(ui, 0.25);
+        });
+
+        self.add_button(ui, ctx, ButtonType::Next);
+    }
+
+    fn render_gmail_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+        ui.vertical_centered(|ui| {
+            self.add_heading(
+                ui,
+                "You can use Gmail to\nsend and receive emails.",
+                101.0,
+                104.0,
+            );
+
+            ui.add_space(35.0);
+            self.gmail_icon.show_scaled(ui, 0.25);
+        });
+
+        self.add_button(ui, ctx, ButtonType::Next);
+    }
+
+    fn render_optionals_page(
+        &mut self,
+        ui: &mut Ui,
+        ctx: &egui::Context,
+        inner_frame: &egui::Frame,
+    ) {
+        ui.vertical_centered(|ui| {
+            self.add_heading(ui, "Select optional programs.", 101.0, 104.0);
+
+            ui.add_space(38.0);
+
+            ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
+                inner_frame.show(ui, |ui| {
+                    let scroll_area = ScrollArea::vertical().auto_shrink([false, false]);
+                    scroll_area.show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            self.add_optional_program(
+                                ui,
+                                "Zoom",
+                                "Join video calls with friends, family, and coworkers.",
+                                Icon::Zoom,
+                            );
+
+                            ui.separator();
+
+                            self.add_optional_program(
+                                ui,
+                                "VLC",
+                                "Play audio and video files, such as music and movies.",
+                                Icon::Vlc,
+                            );
+
+                            ui.separator();
+
+                            self.add_optional_program(
+                                ui,
+                                "LibreOffice Writer",
+                                "Create and edit document, similar to MS Word.",
+                                Icon::LoWriter,
+                            );
+
+                            ui.separator();
+
+                            self.add_optional_program(
+                                ui,
+                                "LibreOffice Calc",
+                                "Create and edit spreadsheets, similar to MS Excel.",
+                                Icon::LoCalc,
+                            );
+
+                            ui.separator();
+
+                            self.add_optional_program(
+                                ui,
+                                "LibreOffice Impress",
+                                "Create and edit slideshows, similar to MS PowerPoint.",
+                                Icon::LoImpress,
+                            );
+                        });
+                    });
+                });
+            });
+        });
+
+        self.add_button(ui, ctx, ButtonType::Next);
+    }
+
+    fn render_account_page(&mut self, ui: &mut Ui, ctx: &egui::Context, inner_frame: &egui::Frame) {
+        ui.vertical_centered(|ui| {
+            self.add_heading(ui, "Create a user account.", 101.0, 104.0);
+
+            ui.add_space(38.0);
+
+            StripBuilder::new(ui).size(Size::exact(500.0)).vertical(|mut strip| {
+                strip.cell(|ui| {
+                    StripBuilder::new(ui).size(Size::remainder()).size(Size::exact(1263.0)).size(Size::remainder()).horizontal(|mut strip| {
+                        strip.empty();
+                        strip.cell(|ui| {
+                            inner_frame
+                            .show(ui, |ui| {
+                                StripBuilder::new(ui)
+                                    .size(Size::exact(440.0))
+                                    .size(Size::remainder())
+                                    .size(Size::exact(440.0))
+                                    .horizontal(|mut strip| {
+                                        use EntryFieldType::*;
+                                        strip.cell(|ui| {
+                                            let left_layout = Layout::top_down(Align::Min);
+                                            ui.with_layout(left_layout, |ui| {
+                                                self.add_entry_field(
+                                                    ui,
+                                                    "Full Name",
+                                                    Some("Willem Dafoe"),
+                                                    Fullname,
+                                                    false,
+                                                );
+                                                self.add_entry_field(
+                                                    ui,
+                                                    "Username",
+                                                    Some("willdafoe"),
+                                                    Username,
+                                                    false,
+                                                );
+                                            });
+                                        });
+
+                                        strip.cell(|ui| {
+                                            ui.with_layout(
+                                                Layout::centered_and_justified(
+                                                    Direction::RightToLeft,
+                                                ),
+                                                |ui| {
+                                                    ui.separator();
+                                                },
+                                            );
+                                        });
+
+                                        strip.cell(|ui| {
+                                            let right_layout = Layout::top_down(Align::Max);
+                                            ui.with_layout(right_layout, |ui| {
+                                                self.add_entry_field(ui, "Password", None, Password, true);
+                                                self.add_entry_field(ui, "Confirm Password", None, ConfirmPassword, true);
+                                                ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
+                                            });
+                                        });
+                                });
+                            });
+                        });
+
+                        strip.empty();
+                    });
+                });
+            });
+        });
+
+        self.add_button(ui, ctx, ButtonType::Finish);
+    }
 }
 
 impl eframe::App for OobeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let add_heading = |ui: &mut Ui, text: &str, margin: f32, size: f32| {
-            ui.add_space(margin);
-
-            let text = rich(text, size, FontType::Bold).color(hex_color!("#282828"));
-            ui.heading(text);
+        // Outer frame is used for the background pattern and the main UI.
+        let outer_frame = egui::Frame {
+            fill: Color32::TRANSPARENT,
+            inner_margin: Margin::same(0.0),
+            ..Default::default()
         };
 
-        let add_button = |app: &mut OobeApp, ui: &mut Ui, button_type: ButtonType| {
-            use ButtonType::*;
-            let button = ImageButton::new(
-                match button_type {
-                    Start => app.start_button_image.texture_id(ctx),
-                    Next => app.next_button_image.texture_id(ctx),
-                    Finish => app.finish_button_image.texture_id(ctx),
-                },
-                Vec2::new(335.0, 96.0),
-            )
-            .frame(false);
-
-            let bottom_alignment = Layout::bottom_up(Align::Center);
-            ui.with_layout(bottom_alignment, |ui| {
-                ui.add_space(62.0);
-
-                if ui.add(button).clicked() {
-                    app.current_page.advance()
-                }
-            });
-        };
-
-        let add_optional_program =
-            |app: &mut OobeApp, ui: &mut Ui, name: &str, description: &str, icon: Icon| {
-                ui.horizontal(|ui| {
-                    use Icon::*;
-                    match icon {
-                        Zoom => &app.zoom_icon,
-                        Vlc => &app.vlc_icon,
-                        LoWriter => &app.lo_writer_icon,
-                        LoCalc => &app.lo_calc_icon,
-                        LoImpress => &app.lo_impress_icon,
-                    }
-                    .show_scaled(ui, 0.25);
-
-                    ui.vertical(|ui| {
-                        add_heading(ui, name, 0.0, 39.0);
-                        ui.label(rich(description, 29.0, FontType::Regular));
-                    });
-                });
-            };
-
-        let add_entry_field =
-            |ui: &mut Ui, name: &str, hint: Option<&str>, editing: &mut String, password: bool| {
-                ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
-                ui.label(rich(name, 39.0, FontType::Bold));
-                ui.add(
-                    TextEdit::singleline(editing)
-                        .min_size(Vec2::new(440.0, 54.0))
-                        .font(FontId::new(35.0, FontType::Medium.into()))
-                        .password(password)
-                        .hint_text(
-                            RichText::new(hint.unwrap_or_default()).color(hex_color!("#737373")),
-                        ),
-                );
-            };
-
-        // Inner frame for the optional programs list and account creation box.
+        // Inner frame is used for the optional programs list and account creation box.
         let inner_frame = egui::Frame {
             inner_margin: Margin::symmetric(38.0, 38.0),
             rounding: Rounding::default().at_least(28.0),
             fill: Color32::WHITE,
-            ..Default::default()
-        };
-
-        let outer_frame = egui::Frame {
-            fill: Color32::TRANSPARENT,
-            inner_margin: Margin::same(0.0),
             ..Default::default()
         };
 
@@ -222,176 +412,11 @@ impl eframe::App for OobeApp {
 
             use Page::*;
             match self.current_page {
-                Start => {
-                    ui.vertical_centered(|ui| {
-                        add_heading(ui, "Let's get you started.", 142.0, 170.0);
-                    });
-
-                    add_button(self, ui, ButtonType::Start);
-                }
-                Firefox => {
-                    ui.vertical_centered(|ui| {
-                        add_heading(ui, "You can use Firefox to\nbrowse the web.", 104.0, 101.0);
-
-                        ui.add_space(15.0);
-
-                        self.firefox_icon.show_scaled(ui, 0.25);
-                    });
-
-                    add_button(self, ui, ButtonType::Next);
-                }
-                Gmail => {
-                    ui.vertical_centered(|ui| {
-                        add_heading(
-                            ui,
-                            "You can use Gmail to\nsend and receive emails.",
-                            104.0,
-                            101.0,
-                        );
-
-                        ui.add_space(35.0);
-
-                        self.gmail_icon.show_scaled(ui, 0.25);
-                    });
-
-                    add_button(self, ui, ButtonType::Next);
-                }
-                Optionals => {
-                    ui.vertical_centered(|ui| {
-                        add_heading(ui, "Select optional programs.", 104.0, 101.0);
-
-                        ui.add_space(38.0);
-
-                        ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
-                            inner_frame.show(ui, |ui| {
-                                let scroll_area =
-                                    ScrollArea::vertical().auto_shrink([false, false]);
-                                scroll_area.show(ui, |ui| {
-                                    ui.vertical(|ui| {
-                                        add_optional_program(
-                                            self,
-                                            ui,
-                                            "Zoom",
-                                            "Join video calls with friends, family, and coworkers.",
-                                            Icon::Zoom,
-                                        );
-
-                                        ui.separator();
-
-                                        add_optional_program(
-                                            self,
-                                            ui,
-                                            "VLC",
-                                            "Play audio and video files, such as music and movies.",
-                                            Icon::Vlc,
-                                        );
-
-                                        ui.separator();
-
-                                        add_optional_program(
-                                            self,
-                                            ui,
-                                            "LibreOffice Writer",
-                                            "Create and edit document, similar to MS Word.",
-                                            Icon::LoWriter,
-                                        );
-
-                                        ui.separator();
-
-                                        add_optional_program(
-                                            self,
-                                            ui,
-                                            "LibreOffice Calc",
-                                            "Create and edit spreadsheets, similar to MS Excel.",
-                                            Icon::LoCalc,
-                                        );
-
-                                        ui.separator();
-
-                                        add_optional_program(
-                                            self,
-                                            ui,
-                                            "LibreOffice Impress",
-                                            "Create and edit slideshows, similar to MS PowerPoint.",
-                                            Icon::LoImpress,
-                                        );
-                                    });
-                                });
-                            });
-                        });
-                    });
-
-                    add_button(self, ui, ButtonType::Next);
-                }
-                Account => {
-                    ui.vertical_centered(|ui| {
-                        add_heading(ui, "Create a user account.", 104.0, 101.0);
-
-                        ui.add_space(38.0);
-
-                        StripBuilder::new(ui).size(Size::exact(500.0)).vertical(|mut strip| {
-                            strip.cell(|ui| {
-                                StripBuilder::new(ui).size(Size::remainder()).size(Size::exact(1263.0)).size(Size::remainder()).horizontal(|mut strip| {
-                                    strip.empty();
-                                    strip.cell(|ui| {
-                                        inner_frame
-                                        .show(ui, |ui| {
-                                            StripBuilder::new(ui)
-                                                .size(Size::exact(440.0))
-                                                .size(Size::remainder())
-                                                .size(Size::exact(440.0))
-                                                .horizontal(|mut strip| {
-                                                    strip.cell(|ui| {
-                                                        let left_layout = Layout::top_down(Align::Min);
-                                                        ui.with_layout(left_layout, |ui| {
-                                                            add_entry_field(
-                                                                ui,
-                                                                "Full Name",
-                                                                Some("Willem Dafoe"),
-                                                                &mut self.account_info.name,
-                                                                false,
-                                                            );
-                                                            add_entry_field(
-                                                                ui,
-                                                                "Username",
-                                                                Some("willdafoe"),
-                                                                &mut self.account_info.username,
-                                                                false,
-                                                            );
-                                                        });
-                                                    });
-        
-                                                    strip.cell(|ui| {
-                                                        ui.with_layout(
-                                                            Layout::centered_and_justified(
-                                                                Direction::RightToLeft,
-                                                            ),
-                                                            |ui| {
-                                                                ui.separator();
-                                                            },
-                                                        );
-                                                    });
-        
-                                                    strip.cell(|ui| {
-                                                        let right_layout = Layout::top_down(Align::Max);
-                                                        ui.with_layout(right_layout, |ui| {
-                                                            add_entry_field(ui, "Password", None, &mut self.account_info.password, true);
-                                                            add_entry_field(ui, "Confirm Password", None, &mut self.account_info.confirm_password, true);
-                                                            ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
-                                                        });
-                                                    });
-                                            });
-                                        });
-                                    });
-        
-                                    strip.empty();
-                                });
-                            });
-                        });
-                    });
-
-                    add_button(self, ui, ButtonType::Finish);
-                }
+                Start => self.render_start_page(ui, ctx),
+                Firefox => self.render_firefox_page(ui, ctx),
+                Gmail => self.render_gmail_page(ui, ctx),
+                Optionals => self.render_optionals_page(ui, ctx, &inner_frame),
+                Account => self.render_account_page(ui, ctx, &inner_frame),
             }
         });
     }
