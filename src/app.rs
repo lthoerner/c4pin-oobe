@@ -1,22 +1,34 @@
 use egui::{
-    Align, Button, CentralPanel, Color32, FontId, Layout, Margin, RichText, Rounding, ScrollArea,
-    TextEdit, Ui, Vec2,
+    Align, CentralPanel, Color32, FontId, ImageButton, Layout, Margin, RichText, Rounding,
+    ScrollArea, TextEdit, Ui, Vec2,
 };
 use egui_extras::RetainedImage;
 
-#[derive(Default)]
 pub struct OobeApp {
     current_page: Page,
     optional_programs: OptionalPrograms,
     account_info: AccountInfo,
-    background_image: Option<RetainedImage>,
+    background_image: RetainedImage,
+    start_button_image: RetainedImage,
+    next_button_image: RetainedImage,
+    finish_button_image: RetainedImage,
 }
 
 impl OobeApp {
-    pub fn new(background_image: RetainedImage) -> Self {
+    pub fn new(
+        background_image: RetainedImage,
+        start_button_image: RetainedImage,
+        next_button_image: RetainedImage,
+        finish_button_image: RetainedImage,
+    ) -> Self {
         Self {
-            background_image: Some(background_image),
-            ..Default::default()
+            current_page: Page::default(),
+            optional_programs: OptionalPrograms::default(),
+            account_info: AccountInfo::default(),
+            background_image,
+            start_button_image,
+            next_button_image,
+            finish_button_image,
         }
     }
 }
@@ -63,6 +75,12 @@ struct AccountInfo {
     confirm_password: String,
 }
 
+enum ButtonType {
+    Start,
+    Next,
+    Finish,
+}
+
 impl eframe::App for OobeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let add_heading = |ui: &mut Ui, text: &str, margin: f32, size: f32| {
@@ -70,13 +88,17 @@ impl eframe::App for OobeApp {
             ui.heading(rich(text, size));
         };
 
-        let add_button = |app: &mut OobeApp, ui: &mut Ui, text: &str| {
-            let button_text = RichText::new(text)
-                .font(FontId::proportional(38.0))
-                .color(Color32::WHITE);
-            let button = Button::new(button_text)
-                .min_size(Vec2::new(335.0, 96.0))
-                .rounding(Rounding::default().at_least(17.0));
+        let add_button = |app: &mut OobeApp, ui: &mut Ui, button_type: ButtonType| {
+            use ButtonType::*;
+            let button = ImageButton::new(
+                match button_type {
+                    Start => app.start_button_image.texture_id(ctx),
+                    Next => app.next_button_image.texture_id(ctx),
+                    Finish => app.finish_button_image.texture_id(ctx),
+                },
+                Vec2::new(335.0, 96.0),
+            )
+            .frame(false);
 
             let bottom_alignment = Layout::bottom_up(Align::Center);
             ui.with_layout(bottom_alignment, |ui| {
@@ -116,9 +138,10 @@ impl eframe::App for OobeApp {
 
         // Add the background pattern to render the main UI over.
         CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
-            if let Some(background_image) = &self.background_image {
-                ui.image(background_image.texture_id(ctx), Vec2::new(1512.0, 982.0));
-            }
+            ui.image(
+                self.background_image.texture_id(ctx),
+                Vec2::new(1512.0, 982.0),
+            );
         });
 
         CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
@@ -131,21 +154,21 @@ impl eframe::App for OobeApp {
                         add_heading(ui, "Let's get you started.", 142.0, 170.0);
                     });
 
-                    add_button(self, ui, "Start");
+                    add_button(self, ui, ButtonType::Start);
                 }
                 Firefox => {
                     ui.vertical_centered(|ui| {
                         add_heading(ui, "You can use Firefox to browse the web.", 104.0, 101.0);
                     });
 
-                    add_button(self, ui, "Next");
+                    add_button(self, ui, ButtonType::Next);
                 }
                 Gmail => {
                     ui.vertical_centered(|ui| {
                         add_heading(ui, "You can use Gmail to send and receive emails.", 104.0, 101.0);
                     });
 
-                    add_button(self, ui, "Next");
+                    add_button(self, ui, ButtonType::Next);
                 }
                 Optionals => {
                     ui.vertical_centered(|ui| {
@@ -207,7 +230,7 @@ impl eframe::App for OobeApp {
                         });
                     });
 
-                    add_button(self, ui, "Next");
+                    add_button(self, ui, ButtonType::Next);
                 }
                 Account => {
                     ui.vertical_centered(|ui| {
@@ -235,7 +258,7 @@ impl eframe::App for OobeApp {
                         });
                     });
 
-                    add_button(self, ui, "Finish");
+                    add_button(self, ui, ButtonType::Finish);
                 }
             }
         });
