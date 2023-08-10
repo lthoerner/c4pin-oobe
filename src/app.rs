@@ -1,9 +1,9 @@
 use eframe::CreationContext;
 use egui::{
-    hex_color, Align, CentralPanel, Color32, FontData, FontDefinitions, FontFamily, FontId,
-    ImageButton, Layout, Margin, RichText, Rounding, ScrollArea, TextEdit, Ui, Vec2,
+    hex_color, Align, CentralPanel, Color32, Direction, FontData, FontDefinitions, FontFamily,
+    FontId, ImageButton, Layout, Margin, RichText, Rounding, ScrollArea, TextEdit, Ui, Vec2,
 };
-use egui_extras::RetainedImage;
+use egui_extras::{RetainedImage, Size, StripBuilder};
 
 pub struct OobeApp {
     current_page: Page,
@@ -20,57 +20,6 @@ pub struct OobeApp {
     lo_writer_icon: RetainedImage,
     lo_calc_icon: RetainedImage,
     lo_impress_icon: RetainedImage,
-}
-
-impl OobeApp {
-    pub fn new(context: &CreationContext) -> Self {
-        let mut fonts = FontDefinitions::default();
-        let families = &mut fonts.families;
-
-        macro_rules! add_font {
-            ($name:literal) => {
-                fonts.font_data.insert(
-                    $name.to_owned(),
-                    FontData::from_static(include_bytes!(concat!("../assets/", $name, ".otf"))),
-                );
-
-                families.insert(FontFamily::Name($name.into()), vec![$name.to_owned()]);
-            };
-        }
-
-        add_font!("sf_pro_bold");
-        add_font!("sf_pro_medium");
-        add_font!("sf_pro_regular");
-
-        context.egui_ctx.set_fonts(fonts);
-
-        macro_rules! get_image {
-            ($name:literal) => {
-                RetainedImage::from_image_bytes(
-                    $name,
-                    include_bytes!(concat!("../assets/", $name, ".png")),
-                )
-                .unwrap()
-            };
-        }
-
-        Self {
-            current_page: Page::default(),
-            optional_programs: OptionalPrograms::default(),
-            account_info: AccountInfo::default(),
-            background_image: get_image!("polkadot_background"),
-            start_button_image: get_image!("start_button"),
-            next_button_image: get_image!("next_button"),
-            finish_button_image: get_image!("finish_button"),
-            firefox_icon: get_image!("firefox_icon"),
-            gmail_icon: get_image!("gmail_icon"),
-            zoom_icon: get_image!("zoom_icon"),
-            vlc_icon: get_image!("vlc_icon"),
-            lo_writer_icon: get_image!("lo_writer_icon"),
-            lo_calc_icon: get_image!("lo_calc_icon"),
-            lo_impress_icon: get_image!("lo_impress_icon"),
-        }
-    }
 }
 
 #[derive(Default, Clone, Copy)]
@@ -127,6 +76,57 @@ enum Icon {
     LoWriter,
     LoCalc,
     LoImpress,
+}
+
+impl OobeApp {
+    pub fn new(context: &CreationContext) -> Self {
+        let mut fonts = FontDefinitions::default();
+        let families = &mut fonts.families;
+
+        macro_rules! add_font {
+            ($name:literal) => {
+                fonts.font_data.insert(
+                    $name.to_owned(),
+                    FontData::from_static(include_bytes!(concat!("../assets/", $name, ".otf"))),
+                );
+
+                families.insert(FontFamily::Name($name.into()), vec![$name.to_owned()]);
+            };
+        }
+
+        add_font!("sf_pro_bold");
+        add_font!("sf_pro_medium");
+        add_font!("sf_pro_regular");
+
+        context.egui_ctx.set_fonts(fonts);
+
+        macro_rules! get_image {
+            ($name:literal) => {
+                RetainedImage::from_image_bytes(
+                    $name,
+                    include_bytes!(concat!("../assets/", $name, ".png")),
+                )
+                .unwrap()
+            };
+        }
+
+        Self {
+            current_page: Page::default(),
+            optional_programs: OptionalPrograms::default(),
+            account_info: AccountInfo::default(),
+            background_image: get_image!("polkadot_background"),
+            start_button_image: get_image!("start_button"),
+            next_button_image: get_image!("next_button"),
+            finish_button_image: get_image!("finish_button"),
+            firefox_icon: get_image!("firefox_icon"),
+            gmail_icon: get_image!("gmail_icon"),
+            zoom_icon: get_image!("zoom_icon"),
+            vlc_icon: get_image!("vlc_icon"),
+            lo_writer_icon: get_image!("lo_writer_icon"),
+            lo_calc_icon: get_image!("lo_calc_icon"),
+            lo_impress_icon: get_image!("lo_impress_icon"),
+        }
+    }
 }
 
 impl eframe::App for OobeApp {
@@ -242,7 +242,12 @@ impl eframe::App for OobeApp {
                 }
                 Gmail => {
                     ui.vertical_centered(|ui| {
-                        add_heading(ui, "You can use Gmail to\nsend and receive emails.", 104.0, 101.0);
+                        add_heading(
+                            ui,
+                            "You can use Gmail to\nsend and receive emails.",
+                            104.0,
+                            101.0,
+                        );
 
                         ui.add_space(35.0);
 
@@ -255,7 +260,7 @@ impl eframe::App for OobeApp {
                     ui.vertical_centered(|ui| {
                         add_heading(ui, "Select optional programs.", 104.0, 101.0);
 
-                        ui.add_space(15.0);
+                        ui.add_space(38.0);
 
                         ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
                             inner_frame.show(ui, |ui| {
@@ -322,23 +327,64 @@ impl eframe::App for OobeApp {
                     ui.vertical_centered(|ui| {
                         add_heading(ui, "Create a user account.", 104.0, 101.0);
 
-                        ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
-                            inner_frame.show(ui, |ui| {
-                                ui.horizontal(|ui| {
-                                    ui.vertical(|ui| {
-                                        add_entry_field(ui, "Full Name", Some("Willem Dafoe"), &mut self.account_info.name, false);
-                                        add_entry_field(ui, "Username", Some("willdafoe"), &mut self.account_info.username, false);
-                                    });
+                        ui.add_space(38.0);
 
-                                    ui.add_space(36.0);
-                                    ui.separator();
-                                    ui.add_space(36.0);
-
-                                    ui.vertical(|ui| {
-                                        add_entry_field(ui, "Password", None, &mut self.account_info.password, true);
-                                        add_entry_field(ui, "Confirm Password", None, &mut self.account_info.confirm_password, true);
-                                        ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
+                        StripBuilder::new(ui).size(Size::exact(500.0)).vertical(|mut strip| {
+                            strip.cell(|ui| {
+                                StripBuilder::new(ui).size(Size::remainder()).size(Size::exact(1263.0)).size(Size::remainder()).horizontal(|mut strip| {
+                                    strip.empty();
+                                    strip.cell(|ui| {
+                                        inner_frame
+                                        .show(ui, |ui| {
+                                            StripBuilder::new(ui)
+                                                .size(Size::exact(440.0))
+                                                .size(Size::remainder())
+                                                .size(Size::exact(440.0))
+                                                .horizontal(|mut strip| {
+                                                    strip.cell(|ui| {
+                                                        let left_layout = Layout::top_down(Align::Min);
+                                                        ui.with_layout(left_layout, |ui| {
+                                                            add_entry_field(
+                                                                ui,
+                                                                "Full Name",
+                                                                Some("Willem Dafoe"),
+                                                                &mut self.account_info.name,
+                                                                false,
+                                                            );
+                                                            add_entry_field(
+                                                                ui,
+                                                                "Username",
+                                                                Some("willdafoe"),
+                                                                &mut self.account_info.username,
+                                                                false,
+                                                            );
+                                                        });
+                                                    });
+        
+                                                    strip.cell(|ui| {
+                                                        ui.with_layout(
+                                                            Layout::centered_and_justified(
+                                                                Direction::RightToLeft,
+                                                            ),
+                                                            |ui| {
+                                                                ui.separator();
+                                                            },
+                                                        );
+                                                    });
+        
+                                                    strip.cell(|ui| {
+                                                        let right_layout = Layout::top_down(Align::Max);
+                                                        ui.with_layout(right_layout, |ui| {
+                                                            add_entry_field(ui, "Password", None, &mut self.account_info.password, true);
+                                                            add_entry_field(ui, "Confirm Password", None, &mut self.account_info.confirm_password, true);
+                                                            ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
+                                                        });
+                                                    });
+                                            });
+                                        });
                                     });
+        
+                                    strip.empty();
                                 });
                             });
                         });
