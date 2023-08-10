@@ -15,6 +15,11 @@ pub struct OobeApp {
     finish_button_image: RetainedImage,
     firefox_icon: RetainedImage,
     gmail_icon: RetainedImage,
+    zoom_icon: RetainedImage,
+    vlc_icon: RetainedImage,
+    lo_writer_icon: RetainedImage,
+    lo_calc_icon: RetainedImage,
+    lo_impress_icon: RetainedImage,
 }
 
 impl OobeApp {
@@ -75,6 +80,31 @@ impl OobeApp {
                 include_bytes!("../assets/gmail_icon.png"),
             )
             .unwrap(),
+            zoom_icon: RetainedImage::from_image_bytes(
+                "zoom_icon",
+                include_bytes!("../assets/zoom_icon.png"),
+            )
+            .unwrap(),
+            vlc_icon: RetainedImage::from_image_bytes(
+                "vlc_icon",
+                include_bytes!("../assets/vlc_icon.png"),
+            )
+            .unwrap(),
+            lo_writer_icon: RetainedImage::from_image_bytes(
+                "lo_writer_icon",
+                include_bytes!("../assets/lo_writer_icon.png"),
+            )
+            .unwrap(),
+            lo_calc_icon: RetainedImage::from_image_bytes(
+                "lo_calc_icon",
+                include_bytes!("../assets/lo_writer_icon.png"),
+            )
+            .unwrap(),
+            lo_impress_icon: RetainedImage::from_image_bytes(
+                "lo_impress_icon",
+                include_bytes!("../assets/lo_writer_icon.png"),
+            )
+            .unwrap(),
         }
     }
 }
@@ -108,9 +138,9 @@ impl Page {
 struct OptionalPrograms {
     zoom: bool,
     vlc: bool,
-    libreoffice_writer: bool,
-    libreoffice_calc: bool,
-    libreoffice_impress: bool,
+    lo_writer: bool,
+    lo_calc: bool,
+    lo_impress: bool,
 }
 
 #[derive(Default)]
@@ -125,6 +155,14 @@ enum ButtonType {
     Start,
     Next,
     Finish,
+}
+
+enum Icon {
+    Zoom,
+    Vlc,
+    LoWriter,
+    LoCalc,
+    LoImpress,
 }
 
 impl eframe::App for OobeApp {
@@ -159,9 +197,23 @@ impl eframe::App for OobeApp {
         };
 
         let add_optional_program =
-            |ui: &mut Ui, name: &str, description: &str, editing: &mut bool| {
-                ui.checkbox(editing, rich(name, 30.0));
-                ui.label(rich(description, 20.0));
+            |app: &mut OobeApp, ui: &mut Ui, name: &str, description: &str, icon: Icon| {
+                ui.horizontal(|ui| {
+                    use Icon::*;
+                    match icon {
+                        Zoom => &app.zoom_icon,
+                        Vlc => &app.vlc_icon,
+                        LoWriter => &app.lo_writer_icon,
+                        LoCalc => &app.lo_calc_icon,
+                        LoImpress => &app.lo_impress_icon,
+                    }
+                    .show_scaled(ui, 0.25);
+
+                    ui.vertical(|ui| {
+                        add_heading(ui, name, 0.0, 39.0);
+                        ui.label(rich(description, 29.0));
+                    });
+                });
             };
 
         let add_entry_field = |ui: &mut Ui, name: &str, editing: &mut String| {
@@ -172,7 +224,7 @@ impl eframe::App for OobeApp {
 
         // Inner frame for the optional programs list and account creation box.
         let inner_frame = egui::Frame {
-            inner_margin: Margin::symmetric(10.0, 10.0),
+            inner_margin: Margin::symmetric(38.0, 38.0),
             rounding: Rounding::default().at_least(28.0),
             fill: Color32::WHITE,
             ..Default::default()
@@ -239,46 +291,51 @@ impl eframe::App for OobeApp {
                                 scroll_area.show(ui, |ui| {
                                     ui.vertical(|ui| {
                                         add_optional_program(
+                                            self,
                                             ui,
                                             "Zoom",
                                             "Join video calls with friends, family, and coworkers.",
-                                            &mut self.optional_programs.zoom,
+                                            Icon::Zoom,
                                         );
 
                                         ui.separator();
 
                                         add_optional_program(
+                                            self,
                                             ui,
                                             "VLC",
                                             "Play audio and video files, such as music and movies.",
-                                            &mut self.optional_programs.vlc,
+                                            Icon::Vlc,
                                         );
 
                                         ui.separator();
 
                                         add_optional_program(
+                                            self,
                                             ui,
                                             "LibreOffice Writer",
                                             "Create and edit document, similar to MS Word.",
-                                            &mut self.optional_programs.libreoffice_writer,
+                                            Icon::LoWriter,
                                         );
 
                                         ui.separator();
 
                                         add_optional_program(
+                                            self,
                                             ui,
                                             "LibreOffice Calc",
                                             "Create and edit spreadsheets, similar to MS Excel.",
-                                            &mut self.optional_programs.libreoffice_calc,
+                                            Icon::LoCalc,
                                         );
 
                                         ui.separator();
 
                                         add_optional_program(
+                                            self,
                                             ui,
                                             "LibreOffice Impress",
                                             "Create and edit slideshows, similar to MS PowerPoint.",
-                                            &mut self.optional_programs.libreoffice_impress,
+                                            Icon::LoImpress,
                                         );
                                     });
                                 });
