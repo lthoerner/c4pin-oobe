@@ -265,7 +265,7 @@ impl OobeApp {
             ),
         };
 
-        ui.style_mut().visuals.extreme_bg_color = Color32::LIGHT_GRAY;
+        ui.visuals_mut().extreme_bg_color = Color32::LIGHT_GRAY;
         ui.label(rich(field_name, 39.0, FontType::Bold));
         ui.add(
             TextEdit::singleline(edit_text)
@@ -321,24 +321,28 @@ impl OobeApp {
 
             ui.add_space(38.0);
 
-            ui.allocate_ui(Vec2::new(1263.0, 500.0), |ui| {
-                inner_frame.show(ui, |ui| {
-                    let scroll_area = ScrollArea::vertical().auto_shrink([false, false]);
-                    scroll_area.show(ui, |ui| {
-                        ui.vertical(|ui| {
-                            use OptionalProgram::*;
-                            self.add_optional_program(ui, Zoom);
-                            ui.separator();
-                            self.add_optional_program(ui, Vlc);
-                            ui.separator();
-                            self.add_optional_program(ui, LoWriter);
-                            ui.separator();
-                            self.add_optional_program(ui, LoCalc);
-                            ui.separator();
-                            self.add_optional_program(ui, LoImpress);
+            strip!(ui, 1263.0, 500.0, |mut strip| {
+                strip.empty();
+                strip.cell(|ui| {
+                    inner_frame.show(ui, |ui| {
+                        let scroll_area = ScrollArea::vertical();
+                        scroll_area.show(ui, |ui| {
+                            ui.vertical(|ui| {
+                                use OptionalProgram::*;
+                                self.add_optional_program(ui, Zoom);
+                                ui.separator();
+                                self.add_optional_program(ui, Vlc);
+                                ui.separator();
+                                self.add_optional_program(ui, LoWriter);
+                                ui.separator();
+                                self.add_optional_program(ui, LoCalc);
+                                ui.separator();
+                                self.add_optional_program(ui, LoImpress);
+                            });
                         });
                     });
                 });
+                strip.empty();
             });
         });
 
@@ -354,8 +358,7 @@ impl OobeApp {
             strip!(ui, 1263.0, 500.0, |mut strip| {
                 strip.empty();
                 strip.cell(|ui| {
-                    inner_frame
-                    .show(ui, |ui| {
+                    inner_frame.show(ui, |ui| {
                         horizontal_strip!(ui, [440.0, remainder, 440.0], |mut strip| {
                             use EntryField::*;
                             strip.cell(|ui| {
