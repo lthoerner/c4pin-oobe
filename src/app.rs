@@ -23,6 +23,10 @@ pub struct OobeApp {
     lo_writer_icon: RetainedImage,
     lo_calc_icon: RetainedImage,
     lo_impress_icon: RetainedImage,
+    checkbox_checked: RetainedImage,
+    checkbox_unchecked: RetainedImage,
+    checkbox_checked_outlined: RetainedImage,
+    checkbox_unchecked_outlined: RetainedImage,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -50,13 +54,38 @@ impl Page {
     }
 }
 
-#[derive(Default)]
+impl Default for OptionalPrograms {
+    fn default() -> Self {
+        Self {
+            zoom: OptionalProgramState::checked(true),
+            vlc: OptionalProgramState::checked(true),
+            lo_writer: OptionalProgramState::checked(true),
+            lo_calc: OptionalProgramState::checked(false),
+            lo_impress: OptionalProgramState::checked(false),
+        }
+    }
+}
+
 struct OptionalPrograms {
-    zoom: bool,
-    vlc: bool,
-    lo_writer: bool,
-    lo_calc: bool,
-    lo_impress: bool,
+    zoom: OptionalProgramState,
+    vlc: OptionalProgramState,
+    lo_writer: OptionalProgramState,
+    lo_calc: OptionalProgramState,
+    lo_impress: OptionalProgramState,
+}
+
+impl OptionalProgramState {
+    fn checked(checked: bool) -> Self {
+        Self {
+            checked,
+            hovered: false,
+        }
+    }
+}
+
+struct OptionalProgramState {
+    checked: bool,
+    hovered: bool,
 }
 
 #[derive(Default)]
@@ -134,6 +163,10 @@ impl OobeApp {
             lo_writer_icon: get_image!("lo_writer_icon"),
             lo_calc_icon: get_image!("lo_calc_icon"),
             lo_impress_icon: get_image!("lo_impress_icon"),
+            checkbox_checked: get_image!("checkbox_checked"),
+            checkbox_unchecked: get_image!("checkbox_unchecked"),
+            checkbox_checked_outlined: get_image!("checkbox_checked_outlined"),
+            checkbox_unchecked_outlined: get_image!("checkbox_unchecked_outlined"),
         }
     }
 
@@ -165,41 +198,45 @@ impl OobeApp {
         });
     }
 
-    fn add_optional_program(&mut self, ui: &mut Ui, program: OptionalProgram) {
+    fn add_optional_program(&mut self, ui: &mut Ui, ctx: &egui::Context, program: OptionalProgram) {
         use OptionalProgram::*;
-        let (program_icon, program_name, program_description) = match program {
+        let (program_icon, program_name, program_description, edit_state) = match program {
             Zoom => (
                 &self.zoom_icon,
                 "Zoom",
                 "Join video calls with friends, family, and coworkers.",
+                &mut self.optional_programs.zoom,
             ),
             Vlc => (
                 &self.vlc_icon,
                 "VLC",
                 "Play audio and video files, such as music and movies.",
+                &mut self.optional_programs.vlc,
             ),
             LoWriter => (
                 &self.lo_writer_icon,
                 "LibreOffice Writer",
                 "Create and edit document, similar to MS Word.",
+                &mut self.optional_programs.lo_writer,
             ),
             LoCalc => (
                 &self.lo_calc_icon,
                 "LibreOffice Calc",
                 "Create and edit spreadsheets, similar to MS Excel.",
+                &mut self.optional_programs.lo_calc,
             ),
             LoImpress => (
                 &self.lo_impress_icon,
                 "LibreOffice Impress",
                 "Create and edit slideshows, similar to MS PowerPoint.",
+                &mut self.optional_programs.lo_impress,
             ),
         };
 
         vertical_strip!(ui, [120.0], |mut strip| {
             strip.cell(|ui| {
-                horizontal_strip!(ui, [111.0, 3.5, 900.0, remainder], |mut strip| {
+                horizontal_strip!(ui, [111.0, 3.5, 900.0, remainder, 108.0], |mut strip| {
                     strip.cell(|ui| {
-                        // Center the icon vertically.
                         ui.with_layout(
                             Layout::centered_and_justified(Direction::LeftToRight),
                             |ui| {
@@ -221,6 +258,44 @@ impl OobeApp {
                         });
                     });
                     strip.empty();
+                    strip.cell(|ui| {
+                        vertical_strip!(ui, [remainder, 62.0, remainder], |mut strip| {
+                            strip.empty();
+                            strip.cell(|ui| {
+                                horizontal_strip!(ui, [remainder, 62.0, remainder], |mut strip| {
+                                    strip.empty();
+                                    strip.cell(|ui| {
+                                        let button = ImageButton::new(
+                                            match (edit_state.checked, edit_state.hovered) {
+                                                (true, false) => {
+                                                    self.checkbox_checked.texture_id(ctx)
+                                                }
+                                                (false, false) => {
+                                                    self.checkbox_unchecked.texture_id(ctx)
+                                                }
+                                                (true, true) => {
+                                                    self.checkbox_checked_outlined.texture_id(ctx)
+                                                }
+                                                (false, true) => {
+                                                    self.checkbox_unchecked_outlined.texture_id(ctx)
+                                                }
+                                            },
+                                            Vec2::new(62.0, 62.0),
+                                        )
+                                        .frame(false);
+
+                                        let button_listener = ui.add(button);
+                                        edit_state.hovered = button_listener.hovered();
+                                        if button_listener.clicked() {
+                                            edit_state.checked = !edit_state.checked;
+                                        }
+                                    });
+                                    strip.empty();
+                                });
+                            });
+                            strip.empty();
+                        });
+                    });
                 });
             });
         });
@@ -320,15 +395,15 @@ impl OobeApp {
                         scroll_area.show(ui, |ui| {
                             ui.vertical(|ui| {
                                 use OptionalProgram::*;
-                                self.add_optional_program(ui, Zoom);
+                                self.add_optional_program(ui, ctx, Zoom);
                                 ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, Vlc);
+                                self.add_optional_program(ui, ctx, Vlc);
                                 ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, LoWriter);
+                                self.add_optional_program(ui, ctx, LoWriter);
                                 ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, LoCalc);
+                                self.add_optional_program(ui, ctx, LoCalc);
                                 ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, LoImpress);
+                                self.add_optional_program(ui, ctx, LoImpress);
                             });
                         });
                     });

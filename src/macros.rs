@@ -36,7 +36,9 @@ macro_rules! bounds {
     (remainder) => {
         Size::remainder()
     };
-    ($size:literal) => {
+    ($size:expr) => {
         Size::exact($size)
-    };
+    }; // ($size:literal) => {
+       //     Size::exact($size)
+       // };
 }
