@@ -1,4 +1,5 @@
 mod app;
+mod macros;
 
 use eframe::Theme;
 use egui::Vec2;

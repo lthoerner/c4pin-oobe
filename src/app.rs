@@ -1,9 +1,12 @@
 use eframe::CreationContext;
 use egui::{
     hex_color, Align, CentralPanel, Color32, Direction, FontData, FontDefinitions, FontFamily,
-    FontId, ImageButton, Layout, Margin, RichText, Rounding, ScrollArea, TextEdit, Ui, Vec2,
+    FontId, ImageButton, Layout, Margin, RichText, Rounding, ScrollArea, Separator, TextEdit, Ui,
+    Vec2,
 };
 use egui_extras::{RetainedImage, Size, StripBuilder};
+
+use crate::{bounds, horizontal_strip, strip, vertical_strip};
 
 pub struct OobeApp {
     current_page: Page,
@@ -82,45 +85,6 @@ enum EntryField {
     Username,
     Password,
     ConfirmPassword,
-}
-
-// Creates a strip of a given size which is centered horizontally.
-macro_rules! strip {
-    ($ui:ident, $width:literal, $height:literal, $contents:expr) => {
-        vertical_strip!($ui, $height, |mut strip| {
-            strip.cell(|ui| {
-                horizontal_strip!(ui, [remainder, $width, remainder], $contents);
-            });
-        });
-    };
-}
-
-// Creates a vertical strip supporting one cell.
-macro_rules! vertical_strip {
-    ($ui:ident, $height:literal, $contents:expr) => {
-        StripBuilder::new($ui)
-            .size(Size::exact($height))
-            .vertical($contents)
-    };
-}
-
-// Creates a centered horizontal strip supporting a variable number of cells.
-macro_rules! horizontal_strip {
-    ($ui:ident, [$($size:tt),*], $contents:expr) => {
-        StripBuilder::new($ui)
-            $(.size(bounds!($size)))*
-            .horizontal($contents)
-    };
-}
-
-// Inteprets the shorthand syntax for strip bounds (into `Size`s).
-macro_rules! bounds {
-    (remainder) => {
-        Size::remainder()
-    };
-    ($size:literal) => {
-        Size::exact($size)
-    };
 }
 
 impl OobeApp {
@@ -202,41 +166,62 @@ impl OobeApp {
     }
 
     fn add_optional_program(&mut self, ui: &mut Ui, program: OptionalProgram) {
-        ui.horizontal(|ui| {
-            use OptionalProgram::*;
-            let (program_icon, program_name, program_description) = match program {
-                Zoom => (
-                    &self.zoom_icon,
-                    "Zoom",
-                    "Join video calls with friends, family, and coworkers.",
-                ),
-                Vlc => (
-                    &self.vlc_icon,
-                    "VLC",
-                    "Play audio and video files, such as music and movies.",
-                ),
-                LoWriter => (
-                    &self.lo_writer_icon,
-                    "LibreOffice Writer",
-                    "Create and edit document, similar to MS Word.",
-                ),
-                LoCalc => (
-                    &self.lo_calc_icon,
-                    "LibreOffice Calc",
-                    "Create and edit spreadsheets, similar to MS Excel.",
-                ),
-                LoImpress => (
-                    &self.lo_impress_icon,
-                    "LibreOffice Impress",
-                    "Create and edit slideshows, similar to MS PowerPoint.",
-                ),
-            };
+        use OptionalProgram::*;
+        let (program_icon, program_name, program_description) = match program {
+            Zoom => (
+                &self.zoom_icon,
+                "Zoom",
+                "Join video calls with friends, family, and coworkers.",
+            ),
+            Vlc => (
+                &self.vlc_icon,
+                "VLC",
+                "Play audio and video files, such as music and movies.",
+            ),
+            LoWriter => (
+                &self.lo_writer_icon,
+                "LibreOffice Writer",
+                "Create and edit document, similar to MS Word.",
+            ),
+            LoCalc => (
+                &self.lo_calc_icon,
+                "LibreOffice Calc",
+                "Create and edit spreadsheets, similar to MS Excel.",
+            ),
+            LoImpress => (
+                &self.lo_impress_icon,
+                "LibreOffice Impress",
+                "Create and edit slideshows, similar to MS PowerPoint.",
+            ),
+        };
 
-            program_icon.show_scaled(ui, 0.25);
-
-            ui.vertical(|ui| {
-                self.add_heading(ui, program_name, 39.0, 0.0);
-                ui.label(rich(program_description, 29.0, FontType::Regular));
+        vertical_strip!(ui, [120.0], |mut strip| {
+            strip.cell(|ui| {
+                horizontal_strip!(ui, [111.0, 3.5, 900.0, remainder], |mut strip| {
+                    strip.cell(|ui| {
+                        // Center the icon vertically.
+                        ui.with_layout(
+                            Layout::centered_and_justified(Direction::LeftToRight),
+                            |ui| {
+                                program_icon.show_scaled(ui, 0.25);
+                            },
+                        );
+                    });
+                    strip.empty();
+                    strip.cell(|ui| {
+                        vertical_strip!(ui, [10.0, 40.0, 30.0, remainder], |mut strip| {
+                            strip.empty();
+                            strip.cell(|ui| {
+                                ui.label(rich(program_name, 39.0, FontType::Bold));
+                            });
+                            strip.cell(|ui| {
+                                ui.label(rich(program_description, 29.0, FontType::Regular));
+                            });
+                            strip.empty();
+                        });
+                    });
+                    strip.empty();
+                });
             });
         });
     }
@@ -265,7 +250,13 @@ impl OobeApp {
             ),
         };
 
-        ui.visuals_mut().extreme_bg_color = Color32::LIGHT_GRAY;
+        // This isn't exactly the most elegant way to style the `TextEdit`s,
+        // but it is the only way that I can figure out based on the docs.
+        let visuals = ui.visuals_mut();
+        visuals.extreme_bg_color = Color32::LIGHT_GRAY;
+        visuals.widgets.hovered.rounding = Rounding::default().at_least(21.0);
+        visuals.widgets.active.rounding = Rounding::default().at_least(21.0);
+        visuals.widgets.inactive.rounding = Rounding::default().at_least(21.0);
         ui.label(rich(field_name, 39.0, FontType::Bold));
         ui.add(
             TextEdit::singleline(edit_text)
@@ -330,13 +321,13 @@ impl OobeApp {
                             ui.vertical(|ui| {
                                 use OptionalProgram::*;
                                 self.add_optional_program(ui, Zoom);
-                                ui.separator();
+                                ui.add(Separator::default().spacing(10.0));
                                 self.add_optional_program(ui, Vlc);
-                                ui.separator();
+                                ui.add(Separator::default().spacing(10.0));
                                 self.add_optional_program(ui, LoWriter);
-                                ui.separator();
+                                ui.add(Separator::default().spacing(10.0));
                                 self.add_optional_program(ui, LoCalc);
-                                ui.separator();
+                                ui.add(Separator::default().spacing(10.0));
                                 self.add_optional_program(ui, LoImpress);
                             });
                         });
