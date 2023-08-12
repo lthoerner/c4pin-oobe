@@ -9,10 +9,19 @@ use egui_extras::{RetainedImage, Size, StripBuilder};
 use crate::{bounds, centered_item, horizontal_strip, strip, vertical_strip};
 
 pub struct OobeApp {
+    assets: OobeAssets,
+    state: OobeState,
+}
+
+#[derive(Default)]
+struct OobeState {
     current_page: Page,
     optional_program_state: OptionalPrograms,
     account_info_state: AccountInfo,
     button_states: ButtonStates,
+}
+
+struct OobeAssets {
     background_image: RetainedImage,
     start_button_image: RetainedImage,
     start_button_hovered_image: RetainedImage,
@@ -158,29 +167,28 @@ impl OobeApp {
         }
 
         Self {
-            current_page: Page::default(),
-            optional_program_state: OptionalPrograms::default(),
-            account_info_state: AccountInfo::default(),
-            button_states: ButtonStates::default(),
-            background_image: get_image!("polkadot_background"),
-            start_button_image: get_image!("start_button"),
-            start_button_hovered_image: get_image!("start_button_hovered"),
-            next_button_image: get_image!("next_button"),
-            next_button_hovered_image: get_image!("next_button_hovered"),
-            finish_button_image: get_image!("finish_button"),
-            finish_button_hovered_image: get_image!("finish_button_hovered"),
-            firefox_icon: get_image!("firefox_icon"),
-            gmail_icon: get_image!("gmail_icon"),
-            zoom_icon: get_image!("zoom_icon"),
-            vlc_icon: get_image!("vlc_icon"),
-            lo_writer_icon: get_image!("lo_writer_icon"),
-            lo_calc_icon: get_image!("lo_calc_icon"),
-            lo_impress_icon: get_image!("lo_impress_icon"),
-            checkbox_checked: get_image!("checkbox_checked"),
-            checkbox_unchecked: get_image!("checkbox_unchecked"),
-            checkbox_checked_outlined: get_image!("checkbox_checked_outlined"),
-            checkbox_unchecked_outlined: get_image!("checkbox_unchecked_outlined"),
-            warning_icon: get_image!("warning_icon"),
+            state: OobeState::default(),
+            assets: OobeAssets {
+                background_image: get_image!("polkadot_background"),
+                start_button_image: get_image!("start_button"),
+                start_button_hovered_image: get_image!("start_button_hovered"),
+                next_button_image: get_image!("next_button"),
+                next_button_hovered_image: get_image!("next_button_hovered"),
+                finish_button_image: get_image!("finish_button"),
+                finish_button_hovered_image: get_image!("finish_button_hovered"),
+                firefox_icon: get_image!("firefox_icon"),
+                gmail_icon: get_image!("gmail_icon"),
+                zoom_icon: get_image!("zoom_icon"),
+                vlc_icon: get_image!("vlc_icon"),
+                lo_writer_icon: get_image!("lo_writer_icon"),
+                lo_calc_icon: get_image!("lo_calc_icon"),
+                lo_impress_icon: get_image!("lo_impress_icon"),
+                checkbox_checked: get_image!("checkbox_checked"),
+                checkbox_unchecked: get_image!("checkbox_unchecked"),
+                checkbox_checked_outlined: get_image!("checkbox_checked_outlined"),
+                checkbox_unchecked_outlined: get_image!("checkbox_unchecked_outlined"),
+                warning_icon: get_image!("warning_icon"),
+            },
         }
     }
 
@@ -191,20 +199,35 @@ impl OobeApp {
     }
 
     fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context) {
-        let hovered = match self.current_page {
-            Page::Start => &mut self.button_states.start_page_button_hovered,
-            Page::Firefox => &mut self.button_states.firefox_page_button_hovered,
-            Page::Gmail => &mut self.button_states.gmail_page_button_hovered,
-            Page::Optionals => &mut self.button_states.optionals_page_button_hovered,
-            Page::Account => &mut self.button_states.account_page_button_hovered,
+        let hovered = match self.state.current_page {
+            Page::Start => &mut self.state.button_states.start_page_button_hovered,
+            Page::Firefox => &mut self.state.button_states.firefox_page_button_hovered,
+            Page::Gmail => &mut self.state.button_states.gmail_page_button_hovered,
+            Page::Optionals => &mut self.state.button_states.optionals_page_button_hovered,
+            Page::Account => &mut self.state.button_states.account_page_button_hovered,
         };
 
-        let (standard_image, hovered_image) = match self.current_page {
-            Page::Start => (&self.start_button_image, &self.start_button_hovered_image),
-            Page::Firefox => (&self.next_button_image, &self.next_button_hovered_image),
-            Page::Gmail => (&self.next_button_image, &self.next_button_hovered_image),
-            Page::Optionals => (&self.next_button_image, &self.next_button_hovered_image),
-            Page::Account => (&self.finish_button_image, &self.finish_button_hovered_image),
+        let (standard_image, hovered_image) = match self.state.current_page {
+            Page::Start => (
+                &self.assets.start_button_image,
+                &self.assets.start_button_hovered_image,
+            ),
+            Page::Firefox => (
+                &self.assets.next_button_image,
+                &self.assets.next_button_hovered_image,
+            ),
+            Page::Gmail => (
+                &self.assets.next_button_image,
+                &self.assets.next_button_hovered_image,
+            ),
+            Page::Optionals => (
+                &self.assets.next_button_image,
+                &self.assets.next_button_hovered_image,
+            ),
+            Page::Account => (
+                &self.assets.finish_button_image,
+                &self.assets.finish_button_hovered_image,
+            ),
         };
 
         let (image, size) = match hovered {
@@ -221,7 +244,7 @@ impl OobeApp {
             let button_listener = ui.add(button);
             *hovered = button_listener.hovered();
             if button_listener.clicked() {
-                self.current_page.advance()
+                self.state.current_page.advance()
             }
         });
     }
@@ -230,34 +253,34 @@ impl OobeApp {
         use OptionalProgram::*;
         let (program_icon, program_name, program_description, edit_state) = match program {
             Zoom => (
-                &self.zoom_icon,
+                &self.assets.zoom_icon,
                 "Zoom",
                 "Join video calls with friends, family, and coworkers.",
-                &mut self.optional_program_state.zoom,
+                &mut self.state.optional_program_state.zoom,
             ),
             Vlc => (
-                &self.vlc_icon,
+                &self.assets.vlc_icon,
                 "VLC",
                 "Play audio and video files, such as music and movies.",
-                &mut self.optional_program_state.vlc,
+                &mut self.state.optional_program_state.vlc,
             ),
             LoWriter => (
-                &self.lo_writer_icon,
+                &self.assets.lo_writer_icon,
                 "LibreOffice Writer",
                 "Create and edit document, similar to MS Word.",
-                &mut self.optional_program_state.lo_writer,
+                &mut self.state.optional_program_state.lo_writer,
             ),
             LoCalc => (
-                &self.lo_calc_icon,
+                &self.assets.lo_calc_icon,
                 "LibreOffice Calc",
                 "Create and edit spreadsheets, similar to MS Excel.",
-                &mut self.optional_program_state.lo_calc,
+                &mut self.state.optional_program_state.lo_calc,
             ),
             LoImpress => (
-                &self.lo_impress_icon,
+                &self.assets.lo_impress_icon,
                 "LibreOffice Impress",
                 "Create and edit slideshows, similar to MS PowerPoint.",
-                &mut self.optional_program_state.lo_impress,
+                &mut self.state.optional_program_state.lo_impress,
             ),
         };
 
@@ -291,11 +314,15 @@ impl OobeApp {
                         centered_item!(ui, |ui| {
                             let button = ImageButton::new(
                                 match (edit_state.checked, edit_state.hovered) {
-                                    (true, false) => self.checkbox_checked.texture_id(ctx),
-                                    (false, false) => self.checkbox_unchecked.texture_id(ctx),
-                                    (true, true) => self.checkbox_checked_outlined.texture_id(ctx),
+                                    (true, false) => self.assets.checkbox_checked.texture_id(ctx),
+                                    (false, false) => {
+                                        self.assets.checkbox_unchecked.texture_id(ctx)
+                                    }
+                                    (true, true) => {
+                                        self.assets.checkbox_checked_outlined.texture_id(ctx)
+                                    }
                                     (false, true) => {
-                                        self.checkbox_unchecked_outlined.texture_id(ctx)
+                                        self.assets.checkbox_unchecked_outlined.texture_id(ctx)
                                     }
                                 },
                                 Vec2::new(62.0, 62.0),
@@ -321,25 +348,25 @@ impl OobeApp {
                 "Full Name",
                 Some("Willem Dafoe"),
                 false,
-                &mut self.account_info_state.name,
+                &mut self.state.account_info_state.name,
             ),
             Username => (
                 "Username",
                 Some("willdafoe"),
                 false,
-                &mut self.account_info_state.username,
+                &mut self.state.account_info_state.username,
             ),
             Password => (
                 "Password",
                 None,
                 true,
-                &mut self.account_info_state.password,
+                &mut self.state.account_info_state.password,
             ),
             ConfirmPassword => (
                 "Confirm Password",
                 None,
                 true,
-                &mut self.account_info_state.confirm_password,
+                &mut self.state.account_info_state.confirm_password,
             ),
         };
 
@@ -373,7 +400,7 @@ impl OobeApp {
         ui.vertical_centered(|ui| {
             self.add_heading(ui, "You can use Firefox to\nbrowse the web.", 101.0, 104.0);
             ui.add_space(15.0);
-            self.firefox_icon.show_scaled(ui, 0.25);
+            self.assets.firefox_icon.show_scaled(ui, 0.25);
         });
 
         self.add_button(ui, ctx);
@@ -389,7 +416,7 @@ impl OobeApp {
             );
 
             ui.add_space(35.0);
-            self.gmail_icon.show_scaled(ui, 0.25);
+            self.assets.gmail_icon.show_scaled(ui, 0.25);
         });
 
         self.add_button(ui, ctx);
@@ -509,7 +536,7 @@ impl OobeApp {
                                         strip.empty();
                                         strip.cell(|ui| {
                                             ui.add_space(4.5);
-                                            self.warning_icon.show_scaled(ui, 0.25);
+                                            self.assets.warning_icon.show_scaled(ui, 0.25);
                                         });
                                         strip.cell(|ui| {
                                             ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
@@ -540,7 +567,7 @@ impl eframe::App for OobeApp {
         // Add the background pattern to render the main UI over
         CentralPanel::default().frame(frame).show(ctx, |ui| {
             ui.image(
-                self.background_image.texture_id(ctx),
+                self.assets.background_image.texture_id(ctx),
                 Vec2::new(1512.0, 982.0),
             );
         });
@@ -549,7 +576,7 @@ impl eframe::App for OobeApp {
             ui.visuals_mut().override_text_color = Some(Color32::BLACK);
 
             use Page::*;
-            match self.current_page {
+            match self.state.current_page {
                 Start => self.render_start_page(ui, ctx),
                 Firefox => self.render_firefox_page(ui, ctx),
                 Gmail => self.render_gmail_page(ui, ctx),
