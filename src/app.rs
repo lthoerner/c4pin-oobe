@@ -31,6 +31,7 @@ pub struct OobeApp {
     checkbox_unchecked: RetainedImage,
     checkbox_checked_outlined: RetainedImage,
     checkbox_unchecked_outlined: RetainedImage,
+    warning_icon: RetainedImage,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -179,6 +180,7 @@ impl OobeApp {
             checkbox_unchecked: get_image!("checkbox_unchecked"),
             checkbox_checked_outlined: get_image!("checkbox_checked_outlined"),
             checkbox_unchecked_outlined: get_image!("checkbox_unchecked_outlined"),
+            warning_icon: get_image!("warning_icon"),
         }
     }
 
@@ -500,8 +502,21 @@ impl OobeApp {
                                 ui.with_layout(right_layout, |ui| {
                                     self.add_entry_field(ui, Password);
                                     self.add_entry_field(ui, ConfirmPassword);
-                                    ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
+
+                                    ui.add_space(24.0);
+
+                                    horizontal_strip!(ui, [auto, 17.0, 358.0], |mut strip| {
+                                        strip.empty();
+                                        strip.cell(|ui| {
+                                            ui.add_space(4.5);
+                                            self.warning_icon.show_scaled(ui, 0.25);
+                                        });
+                                        strip.cell(|ui| {
+                                            ui.label(rich("If you forget this password, you will\nlose all of your files and programs.", 24.0, FontType::Medium));
+                                        });
+                                    });
                                 });
+
                             });
                         });
                     });
