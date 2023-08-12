@@ -16,9 +16,9 @@ pub struct OobeApp {
 #[derive(Default)]
 struct OobeState {
     current_page: Page,
-    optional_program_state: OptionalPrograms,
-    account_info_state: AccountInfo,
-    button_states: ButtonStates,
+    optional_programs: OptionalPrograms,
+    account_info: AccountInfo,
+    buttons: ButtonStates,
 }
 
 struct OobeAssets {
@@ -200,11 +200,11 @@ impl OobeApp {
 
     fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context) {
         let hovered = match self.state.current_page {
-            Page::Start => &mut self.state.button_states.start_page_button_hovered,
-            Page::Firefox => &mut self.state.button_states.firefox_page_button_hovered,
-            Page::Gmail => &mut self.state.button_states.gmail_page_button_hovered,
-            Page::Optionals => &mut self.state.button_states.optionals_page_button_hovered,
-            Page::Account => &mut self.state.button_states.account_page_button_hovered,
+            Page::Start => &mut self.state.buttons.start_page_button_hovered,
+            Page::Firefox => &mut self.state.buttons.firefox_page_button_hovered,
+            Page::Gmail => &mut self.state.buttons.gmail_page_button_hovered,
+            Page::Optionals => &mut self.state.buttons.optionals_page_button_hovered,
+            Page::Account => &mut self.state.buttons.account_page_button_hovered,
         };
 
         let (standard_image, hovered_image) = match self.state.current_page {
@@ -256,31 +256,31 @@ impl OobeApp {
                 &self.assets.zoom_icon,
                 "Zoom",
                 "Join video calls with friends, family, and coworkers.",
-                &mut self.state.optional_program_state.zoom,
+                &mut self.state.optional_programs.zoom,
             ),
             Vlc => (
                 &self.assets.vlc_icon,
                 "VLC",
                 "Play audio and video files, such as music and movies.",
-                &mut self.state.optional_program_state.vlc,
+                &mut self.state.optional_programs.vlc,
             ),
             LoWriter => (
                 &self.assets.lo_writer_icon,
                 "LibreOffice Writer",
                 "Create and edit document, similar to MS Word.",
-                &mut self.state.optional_program_state.lo_writer,
+                &mut self.state.optional_programs.lo_writer,
             ),
             LoCalc => (
                 &self.assets.lo_calc_icon,
                 "LibreOffice Calc",
                 "Create and edit spreadsheets, similar to MS Excel.",
-                &mut self.state.optional_program_state.lo_calc,
+                &mut self.state.optional_programs.lo_calc,
             ),
             LoImpress => (
                 &self.assets.lo_impress_icon,
                 "LibreOffice Impress",
                 "Create and edit slideshows, similar to MS PowerPoint.",
-                &mut self.state.optional_program_state.lo_impress,
+                &mut self.state.optional_programs.lo_impress,
             ),
         };
 
@@ -348,25 +348,25 @@ impl OobeApp {
                 "Full Name",
                 Some("Willem Dafoe"),
                 false,
-                &mut self.state.account_info_state.name,
+                &mut self.state.account_info.name,
             ),
             Username => (
                 "Username",
                 Some("willdafoe"),
                 false,
-                &mut self.state.account_info_state.username,
+                &mut self.state.account_info.username,
             ),
             Password => (
                 "Password",
                 None,
                 true,
-                &mut self.state.account_info_state.password,
+                &mut self.state.account_info.password,
             ),
             ConfirmPassword => (
                 "Confirm Password",
                 None,
                 true,
-                &mut self.state.account_info_state.confirm_password,
+                &mut self.state.account_info.confirm_password,
             ),
         };
 
