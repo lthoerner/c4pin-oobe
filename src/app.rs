@@ -6,7 +6,7 @@ use egui::{
 };
 use egui_extras::{RetainedImage, Size, StripBuilder};
 
-use crate::{bounds, horizontal_strip, strip, vertical_strip};
+use crate::{bounds, centered_item, horizontal_strip, strip, vertical_strip};
 
 pub struct OobeApp {
     current_page: Page,
@@ -235,7 +235,9 @@ impl OobeApp {
 
         vertical_strip!(ui, [120.0], |mut strip| {
             strip.cell(|ui| {
-                horizontal_strip!(ui, [111.0, 3.5, 900.0, remainder, 108.0], |mut strip| {
+                // Strip containing an option program list item
+                horizontal_strip!(ui, [111.0, 3.5, 700.0, remainder, 108.0], |mut strip| {
+                    // Cell for the program icon
                     strip.cell(|ui| {
                         ui.with_layout(
                             Layout::centered_and_justified(Direction::LeftToRight),
@@ -244,56 +246,39 @@ impl OobeApp {
                             },
                         );
                     });
+                    // Padding between the icon and the program name/description
                     strip.empty();
+                    // Cell for the program name and description
                     strip.cell(|ui| {
-                        vertical_strip!(ui, [10.0, 40.0, 30.0, remainder], |mut strip| {
-                            strip.empty();
-                            strip.cell(|ui| {
-                                ui.label(rich(program_name, 39.0, FontType::Bold));
-                            });
-                            strip.cell(|ui| {
-                                ui.label(rich(program_description, 29.0, FontType::Regular));
-                            });
-                            strip.empty();
+                        ui.vertical(|ui| {
+                            ui.add_space(10.0);
+                            ui.label(rich(program_name, 39.0, FontType::Bold));
+                            ui.label(rich(program_description, 29.0, FontType::Regular));
                         });
                     });
+                    // Padding between the program name/description and the checkbox
                     strip.empty();
+                    // Cell for the checkbox
                     strip.cell(|ui| {
-                        vertical_strip!(ui, [remainder, 62.0, remainder], |mut strip| {
-                            strip.empty();
-                            strip.cell(|ui| {
-                                horizontal_strip!(ui, [remainder, 62.0, remainder], |mut strip| {
-                                    strip.empty();
-                                    strip.cell(|ui| {
-                                        let button = ImageButton::new(
-                                            match (edit_state.checked, edit_state.hovered) {
-                                                (true, false) => {
-                                                    self.checkbox_checked.texture_id(ctx)
-                                                }
-                                                (false, false) => {
-                                                    self.checkbox_unchecked.texture_id(ctx)
-                                                }
-                                                (true, true) => {
-                                                    self.checkbox_checked_outlined.texture_id(ctx)
-                                                }
-                                                (false, true) => {
-                                                    self.checkbox_unchecked_outlined.texture_id(ctx)
-                                                }
-                                            },
-                                            Vec2::new(62.0, 62.0),
-                                        )
-                                        .frame(false);
+                        centered_item!(ui, |ui| {
+                            let button = ImageButton::new(
+                                match (edit_state.checked, edit_state.hovered) {
+                                    (true, false) => self.checkbox_checked.texture_id(ctx),
+                                    (false, false) => self.checkbox_unchecked.texture_id(ctx),
+                                    (true, true) => self.checkbox_checked_outlined.texture_id(ctx),
+                                    (false, true) => {
+                                        self.checkbox_unchecked_outlined.texture_id(ctx)
+                                    }
+                                },
+                                Vec2::new(62.0, 62.0),
+                            )
+                            .frame(false);
 
-                                        let button_listener = ui.add(button);
-                                        edit_state.hovered = button_listener.hovered();
-                                        if button_listener.clicked() {
-                                            edit_state.checked = !edit_state.checked;
-                                        }
-                                    });
-                                    strip.empty();
-                                });
-                            });
-                            strip.empty();
+                            let button_listener = ui.add(button);
+                            edit_state.hovered = button_listener.hovered();
+                            if button_listener.clicked() {
+                                edit_state.checked = !edit_state.checked;
+                            }
                         });
                     });
                 });
@@ -329,9 +314,9 @@ impl OobeApp {
         // but it is the only way that I can figure out based on the docs.
         let visuals = ui.visuals_mut();
         visuals.extreme_bg_color = Color32::LIGHT_GRAY;
-        visuals.widgets.hovered.rounding = Rounding::default().at_least(21.0);
         visuals.widgets.active.rounding = Rounding::default().at_least(21.0);
         visuals.widgets.inactive.rounding = Rounding::default().at_least(21.0);
+        visuals.widgets.hovered.rounding = Rounding::default().at_least(21.0);
         ui.label(rich(field_name, 39.0, FontType::Bold));
         ui.add(
             TextEdit::singleline(edit_text)
@@ -376,12 +361,19 @@ impl OobeApp {
         self.add_button(ui, ctx, Button::Next);
     }
 
-    fn render_optionals_page(
-        &mut self,
-        ui: &mut Ui,
-        ctx: &egui::Context,
-        inner_frame: &egui::Frame,
-    ) {
+    fn render_optionals_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+        let frame = egui::Frame {
+            inner_margin: Margin {
+                left: 38.0,
+                top: 30.0,
+                right: 18.0,
+                bottom: 30.0,
+            },
+            rounding: Rounding::default().at_least(28.0),
+            fill: Color32::WHITE,
+            ..Default::default()
+        };
+
         ui.vertical_centered(|ui| {
             self.add_heading(ui, "Select optional programs.", 101.0, 104.0);
 
@@ -389,21 +381,38 @@ impl OobeApp {
 
             strip!(ui, 1263.0, 500.0, |mut strip| {
                 strip.empty();
+                // Cell containing the scrollable list
                 strip.cell(|ui| {
-                    inner_frame.show(ui, |ui| {
+                    frame.show(ui, |ui| {
+                        // Add style to the scroll bar
+                        let style = ui.style_mut();
+                        style.visuals.widgets.active.bg_fill = hex_color!("#D9D9D9");
+                        style.visuals.widgets.inactive.bg_fill = hex_color!("#D9D9D9");
+                        style.visuals.widgets.hovered.bg_fill = hex_color!("#D9D9D9");
+                        style.visuals.extreme_bg_color = Color32::TRANSPARENT;
+                        style.visuals.widgets.active.rounding = Rounding::default().at_least(22.0);
+                        style.visuals.widgets.inactive.rounding =
+                            Rounding::default().at_least(22.0);
+                        style.visuals.widgets.hovered.rounding = Rounding::default().at_least(22.0);
+                        style.spacing.scroll_bar_width = 16.0;
+
                         let scroll_area = ScrollArea::vertical();
                         scroll_area.show(ui, |ui| {
-                            ui.vertical(|ui| {
-                                use OptionalProgram::*;
-                                self.add_optional_program(ui, ctx, Zoom);
-                                ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, ctx, Vlc);
-                                ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, ctx, LoWriter);
-                                ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, ctx, LoCalc);
-                                ui.add(Separator::default().spacing(10.0));
-                                self.add_optional_program(ui, ctx, LoImpress);
+                            // Sub-strip for inserting padding between the list items and the scroll bar
+                            horizontal_strip!(ui, [remainder, 18.0], |mut strip| {
+                                strip.cell(|ui| {
+                                    use OptionalProgram::*;
+                                    self.add_optional_program(ui, ctx, Zoom);
+                                    ui.add(Separator::default().spacing(10.0));
+                                    self.add_optional_program(ui, ctx, Vlc);
+                                    ui.add(Separator::default().spacing(10.0));
+                                    self.add_optional_program(ui, ctx, LoWriter);
+                                    ui.add(Separator::default().spacing(10.0));
+                                    self.add_optional_program(ui, ctx, LoCalc);
+                                    ui.add(Separator::default().spacing(10.0));
+                                    self.add_optional_program(ui, ctx, LoImpress);
+                                });
+                                strip.empty();
                             });
                         });
                     });
@@ -415,7 +424,14 @@ impl OobeApp {
         self.add_button(ui, ctx, Button::Next);
     }
 
-    fn render_account_page(&mut self, ui: &mut Ui, ctx: &egui::Context, inner_frame: &egui::Frame) {
+    fn render_account_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+        let frame = egui::Frame {
+            inner_margin: Margin::symmetric(38.0, 38.0),
+            rounding: Rounding::default().at_least(28.0),
+            fill: Color32::WHITE,
+            ..Default::default()
+        };
+
         ui.vertical_centered(|ui| {
             self.add_heading(ui, "Create a user account.", 101.0, 104.0);
 
@@ -424,7 +440,7 @@ impl OobeApp {
             strip!(ui, 1263.0, 500.0, |mut strip| {
                 strip.empty();
                 strip.cell(|ui| {
-                    inner_frame.show(ui, |ui| {
+                    frame.show(ui, |ui| {
                         horizontal_strip!(ui, [440.0, remainder, 440.0], |mut strip| {
                             use EntryField::*;
                             strip.cell(|ui| {
@@ -467,30 +483,21 @@ impl OobeApp {
 
 impl eframe::App for OobeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Outer frame is used for the background pattern and the main UI.
-        let outer_frame = egui::Frame {
+        let frame = egui::Frame {
             fill: Color32::TRANSPARENT,
             inner_margin: Margin::same(0.0),
             ..Default::default()
         };
 
-        // Inner frame is used for the optional programs list and account creation box.
-        let inner_frame = egui::Frame {
-            inner_margin: Margin::symmetric(38.0, 38.0),
-            rounding: Rounding::default().at_least(28.0),
-            fill: Color32::WHITE,
-            ..Default::default()
-        };
-
-        // Add the background pattern to render the main UI over.
-        CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
+        // Add the background pattern to render the main UI over
+        CentralPanel::default().frame(frame).show(ctx, |ui| {
             ui.image(
                 self.background_image.texture_id(ctx),
                 Vec2::new(1512.0, 982.0),
             );
         });
 
-        CentralPanel::default().frame(outer_frame).show(ctx, |ui| {
+        CentralPanel::default().frame(frame).show(ctx, |ui| {
             ui.visuals_mut().override_text_color = Some(Color32::BLACK);
 
             use Page::*;
@@ -498,8 +505,8 @@ impl eframe::App for OobeApp {
                 Start => self.render_start_page(ui, ctx),
                 Firefox => self.render_firefox_page(ui, ctx),
                 Gmail => self.render_gmail_page(ui, ctx),
-                Optionals => self.render_optionals_page(ui, ctx, &inner_frame),
-                Account => self.render_account_page(ui, ctx, &inner_frame),
+                Optionals => self.render_optionals_page(ui, ctx),
+                Account => self.render_account_page(ui, ctx),
             }
         });
     }

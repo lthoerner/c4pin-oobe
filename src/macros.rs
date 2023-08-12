@@ -30,6 +30,33 @@ macro_rules! horizontal_strip {
     };
 }
 
+// // Adds a single
+// macro_rules! horizontal_item {
+//     ($ui:ident, $contents:expr) => {
+//         horizontal_strip!($ui, [remainder], |mut strip| {
+//             strip.cell($contents);
+//         });
+//     };
+// }
+
+#[macro_export]
+// Creates strips that allow an item to be centered both horizontally and vertically.
+macro_rules! centered_item {
+    ($ui:ident, $contents:expr) => {
+        vertical_strip!($ui, [remainder, remainder, remainder], |mut strip| {
+            strip.empty();
+            strip.cell(|ui| {
+                horizontal_strip!(ui, [remainder, remainder, remainder], |mut strip| {
+                    strip.empty();
+                    strip.cell($contents);
+                    strip.empty();
+                });
+            });
+            strip.empty();
+        });
+    };
+}
+
 #[macro_export]
 // Inteprets the shorthand syntax for strip bounds (into `Size`s).
 macro_rules! bounds {
@@ -38,7 +65,5 @@ macro_rules! bounds {
     };
     ($size:expr) => {
         Size::exact($size)
-    }; // ($size:literal) => {
-       //     Size::exact($size)
-       // };
+    };
 }
