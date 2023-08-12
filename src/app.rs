@@ -1,8 +1,8 @@
 use eframe::CreationContext;
 use egui::{
-    hex_color, Align, CentralPanel, Color32, Direction, FontData, FontDefinitions, FontFamily,
-    FontId, ImageButton, Layout, Margin, RichText, Rounding, ScrollArea, Separator, TextEdit, Ui,
-    Vec2,
+    hex_color, scroll_area::ScrollBarVisibility, Align, CentralPanel, Color32, Direction, FontData,
+    FontDefinitions, FontFamily, FontId, ImageButton, Layout, Margin, RichText, Rounding,
+    ScrollArea, Separator, TextEdit, Ui, Vec2,
 };
 use egui_extras::{RetainedImage, Size, StripBuilder};
 
@@ -10,12 +10,16 @@ use crate::{bounds, centered_item, horizontal_strip, strip, vertical_strip};
 
 pub struct OobeApp {
     current_page: Page,
-    optional_programs: OptionalPrograms,
-    account_info: AccountInfo,
+    optional_program_state: OptionalPrograms,
+    account_info_state: AccountInfo,
+    button_states: ButtonStates,
     background_image: RetainedImage,
     start_button_image: RetainedImage,
+    start_button_hovered_image: RetainedImage,
     next_button_image: RetainedImage,
+    next_button_hovered_image: RetainedImage,
     finish_button_image: RetainedImage,
+    finish_button_hovered_image: RetainedImage,
     firefox_icon: RetainedImage,
     gmail_icon: RetainedImage,
     zoom_icon: RetainedImage,
@@ -54,38 +58,38 @@ impl Page {
     }
 }
 
+struct OptionalPrograms {
+    zoom: CheckboxState,
+    vlc: CheckboxState,
+    lo_writer: CheckboxState,
+    lo_calc: CheckboxState,
+    lo_impress: CheckboxState,
+}
+
 impl Default for OptionalPrograms {
     fn default() -> Self {
         Self {
-            zoom: OptionalProgramState::checked(true),
-            vlc: OptionalProgramState::checked(true),
-            lo_writer: OptionalProgramState::checked(true),
-            lo_calc: OptionalProgramState::checked(false),
-            lo_impress: OptionalProgramState::checked(false),
+            zoom: CheckboxState::checked(true),
+            vlc: CheckboxState::checked(true),
+            lo_writer: CheckboxState::checked(true),
+            lo_calc: CheckboxState::checked(false),
+            lo_impress: CheckboxState::checked(false),
         }
     }
 }
 
-struct OptionalPrograms {
-    zoom: OptionalProgramState,
-    vlc: OptionalProgramState,
-    lo_writer: OptionalProgramState,
-    lo_calc: OptionalProgramState,
-    lo_impress: OptionalProgramState,
+struct CheckboxState {
+    checked: bool,
+    hovered: bool,
 }
 
-impl OptionalProgramState {
+impl CheckboxState {
     fn checked(checked: bool) -> Self {
         Self {
             checked,
             hovered: false,
         }
     }
-}
-
-struct OptionalProgramState {
-    checked: bool,
-    hovered: bool,
 }
 
 #[derive(Default)]
@@ -96,10 +100,13 @@ struct AccountInfo {
     confirm_password: String,
 }
 
-enum Button {
-    Start,
-    Next,
-    Finish,
+#[derive(Default)]
+struct ButtonStates {
+    start_page_button_hovered: bool,
+    firefox_page_button_hovered: bool,
+    gmail_page_button_hovered: bool,
+    optionals_page_button_hovered: bool,
+    account_page_button_hovered: bool,
 }
 
 enum OptionalProgram {
@@ -109,6 +116,7 @@ enum OptionalProgram {
     LoCalc,
     LoImpress,
 }
+
 enum EntryField {
     Fullname,
     Username,
@@ -150,12 +158,16 @@ impl OobeApp {
 
         Self {
             current_page: Page::default(),
-            optional_programs: OptionalPrograms::default(),
-            account_info: AccountInfo::default(),
+            optional_program_state: OptionalPrograms::default(),
+            account_info_state: AccountInfo::default(),
+            button_states: ButtonStates::default(),
             background_image: get_image!("polkadot_background"),
             start_button_image: get_image!("start_button"),
+            start_button_hovered_image: get_image!("start_button_hovered"),
             next_button_image: get_image!("next_button"),
+            next_button_hovered_image: get_image!("next_button_hovered"),
             finish_button_image: get_image!("finish_button"),
+            finish_button_hovered_image: get_image!("finish_button_hovered"),
             firefox_icon: get_image!("firefox_icon"),
             gmail_icon: get_image!("gmail_icon"),
             zoom_icon: get_image!("zoom_icon"),
@@ -176,23 +188,37 @@ impl OobeApp {
         ui.heading(text);
     }
 
-    fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context, button_type: Button) {
-        use Button::*;
-        let button = ImageButton::new(
-            match button_type {
-                Start => self.start_button_image.texture_id(ctx),
-                Next => self.next_button_image.texture_id(ctx),
-                Finish => self.finish_button_image.texture_id(ctx),
-            },
-            Vec2::new(335.0, 96.0),
-        )
-        .frame(false);
+    fn add_button(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+        let hovered = match self.current_page {
+            Page::Start => &mut self.button_states.start_page_button_hovered,
+            Page::Firefox => &mut self.button_states.firefox_page_button_hovered,
+            Page::Gmail => &mut self.button_states.gmail_page_button_hovered,
+            Page::Optionals => &mut self.button_states.optionals_page_button_hovered,
+            Page::Account => &mut self.button_states.account_page_button_hovered,
+        };
+
+        let (standard_image, hovered_image) = match self.current_page {
+            Page::Start => (&self.start_button_image, &self.start_button_hovered_image),
+            Page::Firefox => (&self.next_button_image, &self.next_button_hovered_image),
+            Page::Gmail => (&self.next_button_image, &self.next_button_hovered_image),
+            Page::Optionals => (&self.next_button_image, &self.next_button_hovered_image),
+            Page::Account => (&self.finish_button_image, &self.finish_button_hovered_image),
+        };
+
+        let (image, size) = match hovered {
+            true => (hovered_image, Vec2::new(328.0, 94.0)),
+            false => (standard_image, Vec2::new(335.0, 96.0)),
+        };
+
+        let button = ImageButton::new(image.texture_id(ctx), size).frame(false);
 
         let bottom_alignment = Layout::bottom_up(Align::Center);
         ui.with_layout(bottom_alignment, |ui| {
             ui.add_space(62.0);
 
-            if ui.add(button).clicked() {
+            let button_listener = ui.add(button);
+            *hovered = button_listener.hovered();
+            if button_listener.clicked() {
                 self.current_page.advance()
             }
         });
@@ -205,31 +231,31 @@ impl OobeApp {
                 &self.zoom_icon,
                 "Zoom",
                 "Join video calls with friends, family, and coworkers.",
-                &mut self.optional_programs.zoom,
+                &mut self.optional_program_state.zoom,
             ),
             Vlc => (
                 &self.vlc_icon,
                 "VLC",
                 "Play audio and video files, such as music and movies.",
-                &mut self.optional_programs.vlc,
+                &mut self.optional_program_state.vlc,
             ),
             LoWriter => (
                 &self.lo_writer_icon,
                 "LibreOffice Writer",
                 "Create and edit document, similar to MS Word.",
-                &mut self.optional_programs.lo_writer,
+                &mut self.optional_program_state.lo_writer,
             ),
             LoCalc => (
                 &self.lo_calc_icon,
                 "LibreOffice Calc",
                 "Create and edit spreadsheets, similar to MS Excel.",
-                &mut self.optional_programs.lo_calc,
+                &mut self.optional_program_state.lo_calc,
             ),
             LoImpress => (
                 &self.lo_impress_icon,
                 "LibreOffice Impress",
                 "Create and edit slideshows, similar to MS PowerPoint.",
-                &mut self.optional_programs.lo_impress,
+                &mut self.optional_program_state.lo_impress,
             ),
         };
 
@@ -293,20 +319,25 @@ impl OobeApp {
                 "Full Name",
                 Some("Willem Dafoe"),
                 false,
-                &mut self.account_info.name,
+                &mut self.account_info_state.name,
             ),
             Username => (
                 "Username",
                 Some("willdafoe"),
                 false,
-                &mut self.account_info.username,
+                &mut self.account_info_state.username,
             ),
-            Password => ("Password", None, true, &mut self.account_info.password),
+            Password => (
+                "Password",
+                None,
+                true,
+                &mut self.account_info_state.password,
+            ),
             ConfirmPassword => (
                 "Confirm Password",
                 None,
                 true,
-                &mut self.account_info.confirm_password,
+                &mut self.account_info_state.confirm_password,
             ),
         };
 
@@ -332,7 +363,7 @@ impl OobeApp {
             self.add_heading(ui, "Let's get you\nstarted.", 142.0, 170.0);
         });
 
-        self.add_button(ui, ctx, Button::Start);
+        self.add_button(ui, ctx);
     }
 
     fn render_firefox_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
@@ -342,7 +373,7 @@ impl OobeApp {
             self.firefox_icon.show_scaled(ui, 0.25);
         });
 
-        self.add_button(ui, ctx, Button::Next);
+        self.add_button(ui, ctx);
     }
 
     fn render_gmail_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
@@ -358,7 +389,7 @@ impl OobeApp {
             self.gmail_icon.show_scaled(ui, 0.25);
         });
 
-        self.add_button(ui, ctx, Button::Next);
+        self.add_button(ui, ctx);
     }
 
     fn render_optionals_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
@@ -396,7 +427,8 @@ impl OobeApp {
                         style.visuals.widgets.hovered.rounding = Rounding::default().at_least(22.0);
                         style.spacing.scroll_bar_width = 16.0;
 
-                        let scroll_area = ScrollArea::vertical();
+                        let scroll_area = ScrollArea::vertical()
+                            .scroll_bar_visibility(ScrollBarVisibility::AlwaysVisible);
                         scroll_area.show(ui, |ui| {
                             // Sub-strip for inserting padding between the list items and the scroll bar
                             horizontal_strip!(ui, [remainder, 18.0], |mut strip| {
@@ -421,7 +453,7 @@ impl OobeApp {
             });
         });
 
-        self.add_button(ui, ctx, Button::Next);
+        self.add_button(ui, ctx);
     }
 
     fn render_account_page(&mut self, ui: &mut Ui, ctx: &egui::Context) {
@@ -477,7 +509,7 @@ impl OobeApp {
             });
         });
 
-        self.add_button(ui, ctx, Button::Finish);
+        self.add_button(ui, ctx);
     }
 }
 
