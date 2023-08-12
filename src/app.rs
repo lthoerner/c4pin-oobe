@@ -262,7 +262,7 @@ impl OobeApp {
         vertical_strip!(ui, [120.0], |mut strip| {
             strip.cell(|ui| {
                 // Strip containing an option program list item
-                horizontal_strip!(ui, [111.0, 3.5, 700.0, remainder, 108.0], |mut strip| {
+                horizontal_strip!(ui, [111.0, 3.5, 700.0, auto, 108.0], |mut strip| {
                     // Cell for the program icon
                     strip.cell(|ui| {
                         ui.with_layout(
@@ -354,7 +354,8 @@ impl OobeApp {
                 .min_size(Vec2::new(440.0, 54.0))
                 .font(FontId::new(35.0, FontType::Medium.into()))
                 .password(hide_entry)
-                .hint_text(RichText::new(hint.unwrap_or_default()).color(hex_color!("#737373"))),
+                .hint_text(RichText::new(hint.unwrap_or_default()).color(hex_color!("#737373")))
+                .margin(Vec2::new(17.0, 7.0)),
         );
     }
 
@@ -431,7 +432,7 @@ impl OobeApp {
                             .scroll_bar_visibility(ScrollBarVisibility::AlwaysVisible);
                         scroll_area.show(ui, |ui| {
                             // Sub-strip for inserting padding between the list items and the scroll bar
-                            horizontal_strip!(ui, [remainder, 18.0], |mut strip| {
+                            horizontal_strip!(ui, [auto, 18.0], |mut strip| {
                                 strip.cell(|ui| {
                                     use OptionalProgram::*;
                                     self.add_optional_program(ui, ctx, Zoom);
@@ -473,7 +474,7 @@ impl OobeApp {
                 strip.empty();
                 strip.cell(|ui| {
                     frame.show(ui, |ui| {
-                        horizontal_strip!(ui, [440.0, remainder, 440.0], |mut strip| {
+                        horizontal_strip!(ui, [440.0, auto, 440.0], |mut strip| {
                             use EntryField::*;
                             strip.cell(|ui| {
                                 let left_layout = Layout::top_down(Align::Min);
